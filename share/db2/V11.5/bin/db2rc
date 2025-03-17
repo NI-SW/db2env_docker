@@ -1,0 +1,16 @@
+#! /bin/sh
+# -----------------------------------------------------------------------
+# (C) COPYRIGHT International Business Machines Corp. 2002
+# All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+# NAME: db2rc
+#
+# FUNCTION: Shell Script to run the DB2 UDB Replication Center.
+#
+# -----------------------------------------------------------------------
+
+db2javit -j:CC -i: -l: -o:"-Xmx512m -Xms64m" -a:"-rc $@"
+

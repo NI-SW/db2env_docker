@@ -1,0 +1,2729 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2iupgrade
+#
+# FUNCTION: db2iupgrade - upgrade a DB2 instance for a previous version
+#                      of DB2 to the current version.
+#
+# USAGE: db2iupgrade [-h|-?] [-d] [-a AuthType] [-u FencedID] InstName
+#          -h|-?         display the usage information.
+#          -d            turn debug mode on.
+#          AuthType      is the authentication type (SERVER, CLIENT or DCS)
+#                        for the instance. The default is SERVER.
+#          FencedID      is the name of user ID under which fenced User
+#                        Defined Functions and fenced Stored Procedures will
+#                        run.
+#          InstName      is the name of the instance.
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+
+PROGNAME=`basename $0`       # Program name
+PROGARGS="$*"
+
+# Include common definition file
+if [ -f ${PROGDIR?}/db2iutil ]; then
+    . ${PROGDIR?}/db2iutil
+else
+    echo "File ${PROGDIR?}/db2iutil not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+get_locale         # Get the locale name of set message catalog path
+chk_root           # Check that only root is running this program
+add_servicerec ${PROGNAME?} 0
+if [ $? -ne 0 ]; then
+   exit 67
+fi
+
+# Special variables needed for instance migration
+chk_spacereq  10240 #  Disk space (in KB) required to migrate an instance
+dmsg "Space required = ${SPACEREQ?}"
+DBI_INVALID_INST=10      # Invalid instance name
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+DB2DLNK=${FALSE?}
+
+# To display the help menu
+help()
+{
+    display_msg ${DB2CAT?} 15 \
+       'DBI1015E Usage: %s [-h|-?] [-d] [-a AuthType] [-u FencedID] -g DLFMGid InstName' \
+        ${PROGNAME?}
+    cleanup yes 
+    exit 1
+}
+
+# Check the bit width of the instance to be upgraded
+chk_bitwidth()
+{
+    trac chk_bitwidth $@
+    set ${setopts?}
+
+    query_instuse ${INSTNAME?} "BitWidth" 0
+    BitWidth_M="${INSTUSE_VALUE?}"
+
+    trax chk_bitwidth
+}
+
+# Default values for command line options
+defaultopts()
+{
+    set ${setopts?}
+    DEBUG=1               # Debug mode is FALSE
+    FORCEMIGR=1           # Force upgrade, upsupported
+    FORCEMIGREQ=1         # Variable becomes true if Forced Upgrade is actually
+                          # required regardless of whether or not it is requested
+    AUTHTYPE="SERVER"     # Default authentication type
+    INSTNAME=""           # Initialize variable for instance name
+    FENCEDID=""           # Initialize variable for FencedID userid
+    ICRTFLAGS=""          # This variable will store -flags that db2iupgrade will want
+                          # to pass on the appropriate icrt when it calls it.
+    DLFMCRTFLAGS=""       # Flags for dlfmcrt
+    DLFMiGID=""           # Optional parameter if user is upgrading a DL instance
+    DLFMGID=""            # DLFM Gid
+    DASVERLIST="${DB2VER_V5?}"         # List of version that can upgrade a DAS instance
+    DASTMPLIST="/tmp/.dasmigfile.lst"
+    INSTTYPE=${ITYPE_UNK?}   # Initialize variable for instance type as UNKNOWN
+    INSTTYPE_ORIG=${ITYPE_UNK?}
+    CFGFILE=""
+    CFGFILETYPE=""
+    IS_FIRST_HOST=${FALSE?}
+    SKIPDBCHK=${FALSE?}
+    SKIPLOADPENDINGCHK=${FALSE?}
+    IBMLDAPSECURITYINIOLDPATH=""
+    IBMLDAPSECURITYININEWPATH=""
+    ONLINE_PREPARE_SQLLIB_VER=${FALSE?}
+    ONLINE_COMMIT=${FALSE?}
+}
+
+# online commit steps
+commit_online()
+{
+   trac commit_online $@
+
+   SQLLIBDIR_VER_NAME="sqllib_v${DB2VER?}"
+   # move the prepared sqllib
+   mv ${INSTHOME?}/${SQLLIBDIR_VER_NAME?} ${INSTHOME?}/sqllib 
+
+  # add instance list
+    add_instlist ${INSTNAME?} ${DB2VER?}
+
+  # add .ftok file
+  if [ -f ${INSTHOME?}/sqllib/bin/db2ftok ]; then
+         ${DB2DIR?}/instance/db2iexec ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2ftok"
+   fi
+   # link db2tss files
+   link_db2tss_tools
+
+   # update the DBM config file
+    updt_dbmcfg
+    
+  trax commit_online
+
+ }
+# Retrieves list of user's set environment variables
+init_envlist()
+{
+    trac get_envlist $@
+    set ${setopts?}
+
+    # su's to the user and retrieves the environment list using "env"
+    rm -f ${TMPFILE4?}
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "env > ${TMPFILE4?}"
+
+    trax get_envlist
+}
+
+# Sets an instance-level registry variable
+set_regvar()
+{
+    trac set_regvar $@
+    set ${setopts?}
+
+    regvar=$1
+    regvalue=$2
+    dmsg "regvar = ${regvar?}"
+    dmsg "regvalue = ${regvalue?}"
+
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2set ${regvar?}=${regvalue?} -i ${INSTNAME?}" 1> /dev/null 2> /dev/null
+    rc=$?
+
+    dmsg "rc = ${rc?}"
+
+    trax set_regvar
+}
+
+# Gets an instance-level environment setting
+get_envvar()
+{
+    trac get_envvar $@
+    set ${setopts?}
+
+    envvar=$1
+    dmsg "envvar = ${envvar?}"
+
+    ENVVALUE=`cat ${TMPFILE4?} | grep "^${envvar?}=" | cut -d= -f2`
+    dmsg "value = ${ENVVALUE?}"
+
+    trax get_envvar
+}
+
+# Gets an instance-level registry setting
+get_regvar()
+{
+    trac get_regvar $@
+    set ${setopts?}
+
+    regvar=$1
+    dmsg "regvar = ${regvar?}"
+
+    rm -f ${TMPFILE3?}
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} \
+        "db2set ${regvar?} > ${TMPFILE3?}" > /dev/null 2> /dev/null
+    rc=$?
+
+    REGVALUE=`cat ${TMPFILE3?}`
+    dmsg "rc = ${rc?}"
+    dmsg "value = ${REGVALUE?}"
+    rm -f ${TMPFILE3?}
+
+    if [ ${rc?} -ne 0 ]
+    then
+        REGVALUE=""
+        dmsg "value reset to null"
+    fi
+
+    trax get_regvar
+}
+
+# Sets an environment variable as an instance-level profile variable
+migr_env2reg()
+{
+    trac migr_env2reg $@
+    set ${setopts?}
+
+    envvar=$1
+    dmsg "envvar = ${envvar?}"
+    regvar=$2
+    dmsg "regvar = ${regvar?}"
+
+    envvalue=`cat ${TMPFILE4?} | grep "^${envvar?}=" | cut -d= -f2`
+    rc=$?
+    dmsg "envvalue = ${envvalue?}"
+    dmsg "rc = ${rc?}"
+
+    if [ "X${envvalue?}" != "X" ]; then
+        set_regvar ${regvar?} ${envvalue?}
+    fi
+
+    trax migr_env2reg
+}
+
+# Upgrades the list of environment variables to registry variables
+migr_env2reg_list()
+{
+    trac migr_env2reg_list $@
+    set ${setopts?}
+
+    count=$#
+
+    while [ ${count?} -gt 1 ]
+    do
+        # odd  = envvar (old environment)
+        # even = regvar (new registry)
+        migr_env2reg $1 $2
+        shift 2
+        count=`expr ${count?} - 2`
+    done
+
+    trax migr_env2reg_list
+}
+
+# Sets a DBM CFG parameter
+set_dbmcfgparm()
+{
+    trac set_dbmcfgparm $@
+    set ${setopts?}
+
+    cfgparm=$1
+    cfgval=$2
+    dmsg "cfgparm = ${cfgparm?}"
+    dmsg "cfgval = ${cfgval?}"
+
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2 update dbm cfg using ${cfgparm?} '${cfgval?}' " 1> /dev/null 2> /dev/null
+    rc=$?
+
+    dmsg "rc = ${rc?}"
+
+    trax set_dbmcfgparm
+}
+
+# Sets an environment variable as an instance-level profile variable
+migr_env2dbmcfg()
+{
+    trac migr_env2dbmcfg $@
+    set ${setopts?}
+
+    envvar=$1
+    dmsg "envvar = ${envvar?}"
+    cfgvar=$2
+    dmsg "cfgvar = ${cfgvar?}"
+
+    envvalue=`cat ${TMPFILE4?} | grep "^${envvar?}=" | cut -d= -f2`
+    rc=$?
+    dmsg "envvalue = ${envvalue?}"
+    dmsg "rc = ${rc?}"
+
+    if [ "X${envvalue?}" != "X" ]; then
+        set_dbmcfgparm ${cfgvar?} ${envvalue?}
+    fi
+
+    trax migr_env2dbmcfg
+}
+
+# Upgrades a list of environment variables to DBM CFG parms
+migr_env2dbmcfg_list()
+{
+    trac migr_env2dbmcfg_list $@
+    set ${setopts?}
+
+    count=$#
+
+    while [ ${count?} -gt 1 ]
+    do
+        migr_env2dbmcfg $1 $2
+        shift 2
+        count=`expr ${count?} - 2`
+    done
+
+    trax migr_env2dbmcfg_list
+}
+# Upgrades environment variables into a 'db2fupdt'able file
+migr_env2file()
+{
+    trac migr_env2file $@
+    set ${setopts?}
+
+    envvar=$1
+    envvarvalue=$2
+    endfile=$3
+
+    CMD_DB2FUPDT=${DB2DIR?}/bin/db2fupdt
+    touch ${endfile?}
+    ${CMD_DB2FUPDT?} -f ${endfile?} -p ${envvar?} -v ${envvarvalue?}
+
+    trax migr_env2file
+}
+
+# Upgrades and updates the appropriate environment variables
+migr_environment()
+{
+    trac migr_environment $@
+    set ${setopts?}
+
+    if [ "${DB2INSTVER?}" = "${DB2VER_V6?}" ]
+    then
+        # Currently only AIX/Sun, but may as well "upgrade" anywhere.
+        migr_env2reg_list "DB2DBDFT" "DB2DBDFT" \
+                          "IWM_RUNTIME" "DQP_RUNTIME" \
+                          "IWM_SERVER" "DQP_SERVER" \
+                          "IWM_INTERVAL" "DQP_INTERVAL" \
+                          "IWMLOG" "DQP_LOG" \
+                          "IWM_DISKMON" "DQP_DISKMON" \
+                          "IWM_NOEXPLAIN" "DQP_NOEXPLAIN" \
+                          "IWM_RES_TBLSPC" "DQP_RES_TBLSPC"
+    fi
+    
+    rm -f ${TMPFILE4?}
+
+    trax migr_environment
+}
+
+# Data Joiner environment function takes in 1 parameter : CHECK or UPGRADE.
+# If in CHECK mode, returns 1 if non-DB2 data sources are present.  Returns 0
+# if not.  UPGRADE mode, returns 0 if successful.  Function returns 2 if non-DJ
+# instance and 255 if no parameter specified.
+dj_env()
+{
+    trac dj_env $@
+    set ${setopts?}
+
+    flag=$1
+    FEDERATED=${FALSE?}
+    rc=2
+
+    if [ "${DB2INSTVER?}" = "${DB2VER_DJ?}" ]; then
+        DJ_ENV_LIST="ORACLE_HOME SYBASE INFORMIXDIR INFORMIXSERVER ODBCINI DJXODBCTRACE"
+        DJ_ENV_LIST="${DJ_ENV_LIST?} DJX_ODBC_LIBRARY_PATH LIBPATH DB2ENVLIST TERADATA_HOME"
+        DJ_ENV_LIST="${DJ_ENV_LIST?} COPLIB COPERR CXA_CONFIG"
+
+        for dj_env_var in ${DJ_ENV_LIST?}; do
+            dj_env_var_value=`awk '$1 ~ /^'${dj_env_var?}'$/{print $2}' FS== ${TMPFILE4?}`
+            if [ "X${dj_env_var_value?}" != "X" ]; then
+                if [ "${flag?}" = "UPGRADE" ]; then
+                    migr_env2file ${dj_env_var?} ${dj_env_var_value?} ${INSTHOME?}/sqllib/cfg/db2dj.ini
+                    FEDERATED=${TRUE?}
+                elif [ "${flag?}" = "CHECK" ]; then
+                    rc=1
+                else
+                    rc=255
+                fi
+            fi
+        done
+
+        if [ -f ${INSTHOME?}/sqllib/cfg/db2dj.ini ]; then
+            chmod u=rw,go=r ${INSTHOME?}/sqllib/cfg/db2dj.ini
+            chown ${INSTNAME?} ${INSTHOME?}/sqllib/cfg/db2dj.ini
+        fi
+
+        rc=0
+    fi
+
+    if [ ${FEDERATED?} -eq ${TRUE?} ]
+    then
+        set_dbmcfgparm FEDERATED YES
+    fi
+
+    trax dj_env
+    return ${rc?}
+}
+
+# Upgrades and updates the appropriate registry variables
+migr_registry()
+{
+    set ${setopts?}
+    if [ "${DB2INSTVER?}" = "${DB2VER_V6?}" -o "${DB2INSTVER?}" = "${DB2VER_V7?}" ]
+    then
+        get_regvar DLFM_BACKUP_DIR_NAME
+        if [ "X${REGVALUE?}" != "X" ]
+        then
+            if [ "${REGVALUE?}" = "ADSM" -o "${REGVALUE?}" = "TSM" ]
+            then
+                set_regvar DLFM_BACKUP_TARGET TSM
+                set_regvar DLFM_BACKUP_DIR_NAME ""
+            else
+                set_regvar DLFM_BACKUP_TARGET LOCAL
+            fi
+        fi
+    fi
+    get_regvar DB2COMM
+    if [ "X${REGVALUE?}" != "X" ]
+        then
+        # mark changes
+        changed=${FALSE?}
+
+        unset NEWREGVALUE
+        for prot in `echo ${REGVALUE?} | sed -e 's/,/ /g' | tr a-z A-Z`
+        do
+            case ${prot?} in
+                IPXSPX|APPC)
+                    # these are removed.
+                    changed=${TRUE?}
+                    display_msg ${DB2CAT?} 185 \
+                'DBI1185I Server protcol %s is no longer supported' \
+                        ${prot?}
+                    ;;
+                *)
+                    NEWREGVALUE="${NEWREGVALUE}${NEWREGVALUE:+,}${prot?}"
+                    ;;
+            esac
+        done
+        if [ ${changed?} -eq ${TRUE?} ]
+        then
+            NEWREGVALUE=`echo ${NEWREGVALUE?} | sed -e 's/ /,/g'`
+            set_regvar DB2COMM ${NEWREGVALUE?}
+        fi
+    fi
+
+    # Since in V11 the default value in memory for CFMT tuner has been changed to auto,
+    # in order to preserve the old behavior, if DB2_DATABASE_CF_MEMORY is not set
+    # then we should not enable CFMT in the upgraded instance by changing DB2_DATABASE_CF_MEMORY
+    # to 100.
+    get_regvar DB2_DATABASE_CF_MEMORY
+    if [ -z "${REGVALUE?}" -a ${INSTTYPE?} -eq ${ITYPE_SD?} ]
+    then
+        # The reg var is not set, set it to 100 in order to preserve the old behavior
+        set_regvar DB2_DATABASE_CF_MEMORY 100
+    fi
+}
+
+# Check all cataloged local databases for conditions that would
+# prevent their successful upgrade.
+is_firsthost()
+{
+    trac is_firsthost $@
+    set ${setopts?}
+    ret_value=${TRUE?}
+    
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then   
+        new_install_vrmf=${DB2DIR?}:${Cur_VRMF?}
+        hostname=`hostname`
+        _update_file="${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/.update"
+        if [ -f ${_update_file?} ]; then
+            grep -v "^${hostname?}=" ${_update_file?} | grep "=${new_install_vrmf?}$" >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                ret_value=${FALSE?}         
+            fi
+        fi
+    fi
+            
+    trax is_firsthost
+    
+    return ${ret_value?}
+}
+
+chk_databases()
+{
+    trac chk_databases $@
+    set ${setopts?}
+
+    # Error codes used in this function only
+    EXIT_DB2CKMIG_WARNING=1 # Err code for authentication type mismatch
+    EXIT_DB2CKMIG_ERROR=3   # Err code for view problem - override with -m flag
+
+    rm -f ${TMPFILE1?}
+            ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${PROGDIR?}/db2imchk ${INSTNAME?} \
+                   ${INSTHOME?} ${TMPFILE1?} ${SKIPLOADPENDINGCHK?} ${ONLINE_PREPARE_SQLLIB_VER?} \
+                   ${ONLINE_COMMIT?}"
+    exitcode=$?
+
+    if [ -s ${TMPFILE1?} ]; then
+        cat ${TMPFILE1?} >> ${DB2INSTLOG?}  # Append the logfile
+    fi
+    rm -f ${TMPFILE1?}
+
+    case ${exitcode?} in
+        ${TRUE?} )
+            :    # No errors
+            ;;
+        ${EXIT_DB2CKMIG_WARNING?} )
+            display_msg ${DB2CAT?} 266 \
+                'DBI1266I  Refer to the log file "%s" for more information.' \
+                 ${INSTHOME?}/upgrade.log
+            ;;
+        ${EXIT_DB2CKMIG_ERROR?} )
+            display_msg ${DB2CAT?} 205 \
+                'DBI1205E One or more local databases cannot be \
+                upgraded to the version from which you are running \
+                this command. Check the log file %s for the list of \
+                errors.\n' ${INSTHOME?}/upgrade.log 
+
+            if [ ${FORCEMIGR?} -eq ${FALSE?} ]; then
+                stop_prog 1
+            fi
+            ;;
+        * )
+            display_msg ${DB2CAT?} 69 \
+                'DBI1069E Unexpected error. Function = %s, Return code = %s.' \
+                chk_databases ${exitcode?}
+            stop_prog 1
+            ;;
+    esac
+
+    trax chk_databases
+}
+
+backup_old_sqllib()
+{
+    trac backup_old_sqllib $@
+    set ${setopts?}
+
+    # Get the DB2 version for the instance
+    chk_version ${INSTNAME?}
+    db2iver=$?    # DB2 version for instance $INSTNAME
+
+    # Ensure that we are upgrading a valid instance
+    if [ ${db2iver?} -ne ${DB2INSTVER?} -o ${db2iver?} -eq ${DB2VER?} ]; then
+        display_msg ${DB2CAT?} 202 \
+            'DBI1202E Instance %s cannot be upgraded. Return code %s.\n' \
+            ${INSTNAME?} ${DBI_INVALID_INST?}
+        stop_prog 1
+    fi
+
+    # Backup the sqllib directory by moving it to $OLDSQLLIB.
+    if [ -d ${INSTHOME?}/${OLDSQLLIB?} ] ; then
+        display_msg ${DB2CAT?} 82 \
+            'DBI1082E The file or directory %s already exists.\n' ${INSTHOME?}/${OLDSQLLIB?}
+        stop_prog 1
+    fi
+
+    mv ${INSTHOME?}/sqllib ${INSTHOME?}/${OLDSQLLIB?}
+    if [ $? -ne 0 ] ; then
+        display_msg ${DB2CAT?} 85 \
+            'DBI1085E An attempt to move the file or directory %s to %s failed.\n' \
+            ${INSTHOME?}/sqllib ${INSTHOME?}/${OLDSQLLIB?}
+        stop_prog 1
+    fi
+
+    trax backup_old_sqllib
+}
+
+backup_old_sqllib_shared()
+{
+    trac backup_old_sqllib_shared $@
+    set ${setopts?}
+    
+    db2_sd_inst_dir=${SD_INSTPROF?}/${INSTNAME?}
+    
+    # Backup the sqllib directory by moving it to $OLDSQLLIBSHARED.
+    if [ -d ${db2_sd_inst_dir?}/${OLDSQLLIBSHARED?} ] ; then
+        display_msg ${DB2CAT?} 82 \
+            'DBI1082E The file or directory %s already exists.\n' ${db2_sd_inst_dir?}/${OLDSQLLIBSHARED?}
+        stop_prog 1
+    fi
+
+    mv ${db2_sd_inst_dir?}/sqllib_shared ${db2_sd_inst_dir?}/${OLDSQLLIBSHARED?}
+    if [ $? -ne 0 ] ; then
+        display_msg ${DB2CAT?} 85 \
+            'DBI1085E An attempt to move the file or directory %s to %s failed.\n' \
+            ${db2_sd_inst_dir?}/sqllib_shared ${db2_sd_inst_dir?}/${OLDSQLLIBSHARED?}
+        stop_prog 1
+    fi
+
+    trax backup_old_sqllib_shared
+}
+
+# clean directory upgrade trace files
+# Passed is either "REMOVE" or "SAVE" 
+# REMOVE deletes the trace files from the instance's home directory
+# SAVE moves the trace files to sqllib/db2dump directory
+clean_migr_logs()
+{
+    trac clean_migr_logs $@
+    set ${setopts?}
+    
+    FLAG=$1
+    trcFileList="db2imdbd.dmp db2imnod.dmp db2migsig.dmp db2imgw.dmp"
+
+    for file in ${trcFileList?}
+    do
+        if [ -f ${INSTHOME?}/${file?} ]; then
+            if [ "${FLAG?}" = "REMOVE" ]; then
+                rm -f ${INSTHOME?}/${file?}
+            elif [ "${FLAG?}" = "SAVE" ]; then
+                mv ${INSTHOME?}/${file?} ${INSTHOME?}/sqllib/db2dump/
+            fi
+        fi
+    done
+
+    trax clean_migr_logs
+}
+
+# Copy system database directory, node directory & DCS directory
+copy_db_dirs()
+{
+    trac copy_db_dirs $@
+    set ${setopts?}
+
+    # Copy the system database directory, node & DCS directies
+    # Change ownership and permissions of all newly copied dirs
+    instdirs="sqldbdir sqlnodir sqlgwdir"
+    for dname in ${instdirs?}; do
+        if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then
+            old_dname="${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}/${dname?}"
+            new_dname="${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/${dname?}"
+        else
+            old_dname="${INSTHOME?}/${OLDSQLLIB?}/${dname?}"
+            new_dname="${INSTHOME?}/sqllib/${dname?}"
+        fi
+
+        # If the old dir exist, copy it to new sqllib
+        if [ -d ${old_dname?} ] ; then
+            if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+                if [ -d ${new_dname?} ]; then
+                    rm -rf ${new_dname?}
+                fi
+                cp -pr ${old_dname?} ${new_dname?}
+                if [ $? -ne 0 ] ; then
+                    display_msg ${DB2CAT?} 86 \
+                        'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                        ${old_dname?} ${new_dname?}
+                    stop_prog 1
+                fi
+            fi
+                       
+            if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then
+		rm -rf ${INSTHOME?}/sqllib/${dname?}
+                ln -sf ${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/${dname?} ${INSTHOME?}/sqllib/${dname?}
+            fi
+        fi
+
+        # Set perms, ownership on new files
+        if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+            if [ -d ${new_dname?} ]; then
+                mkpermission "ug=rwx,o=rx" ${new_dname?}
+                chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${new_dname?}
+                for file_or_dir in `find ${new_dname?}/*`; do
+                  if [ -d ${file_or_dir?} ]
+                  then
+                    mkpermission "ug=rwx,o=rx" ${file_or_dir?}
+                  else
+                    mkpermission "ug=rw,o=r" ${file_or_dir?}
+                  fi
+                  chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${file_or_dir?}
+                done
+            fi
+        fi
+    done
+
+    trax copy_db_dirs
+}
+
+# This function is used upgrade all the files/dirs
+# containing useful info about the instance:
+#     database, node, and/or dcs directories
+#     database config file
+upgrade_instinfo()
+{
+    trac upgrade_instinfo $@
+    set ${setopts?}
+
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ];then
+        old_path=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}
+        new_path=${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared
+    else
+        old_path=${INSTHOME?}/${OLDSQLLIB?}
+        new_path=${INSTHOME?}/sqllib
+    fi
+
+    # if there are old profiles for the CC, copy them over
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/db2misc.prf ]
+    then
+        copyfile ${INSTHOME?}/${OLDSQLLIB?} ${INSTHOME?}/sqllib db2misc.prf
+    fi
+
+    # Temp file for local database directory upgrade errors
+    tmperror="${INSTCTRLDIR?}/.imldbpath"
+    rm -f ${tmperror?}
+
+    # Error codes used in this function only
+    EXIT_NODE_FAIL=2       # Err code for node directory upgrade failure
+    EXIT_SYSDBDIR_FAIL=3   # Err code for system database directory upgrade failure
+    EXIT_LDBDIR_FAIL=4     # Err code for local database directory upgrade failure
+
+    # Upgrade the system and local database directories
+    if [ -d ${INSTHOME?}/sqllib/sqldbdir ] ; then
+        
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "unset LIBPATH; ${INSTHOME?}/sqllib/bin/db2imdbd ${INSTHOME?}/sqllib ${INSTNAME?}"
+        exitcode=$?
+
+        case ${exitcode?} in
+            ${TRUE?})
+:  # No errors
+                ;;
+            ${EXIT_SYSDBDIR_FAIL?})
+                display_msg ${DB2CAT?} 222 \
+                    'DBI1222W The system database directory is corrupted and cannot be upgraded.'
+                stop_prog 1
+                ;;
+            ${EXIT_LDBDIR_FAIL?})
+                # If temp file for local database directory upgrade errors
+                # exists
+                if [ -s ${tmperror?} ]; then
+                    cat ${tmperror?} | while read ldbdirpath; do
+                        display_msg ${DB2CAT?} 212 \
+                            'DBI1212W Upgrade of the local database directory on %s failed.' \
+                            ${ldbdirpath?}
+                    done
+                else
+                    display_msg ${DB2CAT?} 69 \
+                        'DBI1069E Unexpected error. Function = %s, Return code = %s.' \
+                        upgrade_instinfo 21
+                fi
+                stop_prog 1
+                ;;
+            *)
+                display_msg ${DB2CAT?} 69 \
+                    'DBI1069E Unexpected error. Function = %s, Return code = %s.' \
+                    upgrade_instinfo_dbdir ${exitcode?}
+                stop_prog 1
+                ;;
+        esac
+    fi
+
+    # Upgrade the system node directory
+    if [ -d ${INSTHOME?}/sqllib/sqlnodir ] ; then
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2imnod ${INSTHOME?}/sqllib"
+        exitcode=$?
+
+        case ${exitcode?} in
+            ${TRUE?})
+                :    # No errors
+                ;;
+            ${EXIT_NODE_FAIL?})
+                display_msg ${DB2CAT?} 220 \
+                    'DBI1220E Upgrade of the node directory on %s failed.' \
+            ${INSTHOME?}/sqllib
+                stop_prog 1 ;;
+            *)
+                display_msg ${DB2CAT?} 69 \
+                    'DBI1069E Unexpected error. Function = %s, Return code = %s.' \
+                    upgrade_instinfo_node ${exitcode?}
+                stop_prog 1 ;;
+        esac
+    fi
+
+    # New db2systm
+    newdb2systm="${new_path?}/db2systm"
+    # Old db2systm
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then
+        olddb2systm="${old_path?}/db2systm"
+    else
+        olddb2systm="${old_path?}/${BAKDIRNAME?}/${OLDDB2SYSTM?}"
+    fi
+    
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "unset LIBPATH; ${INSTHOME?}/sqllib/bin/db2imdbm \
+               ${newdb2systm?} ${olddb2systm?} ${HIGHEST_BIT?} ${OLD_INSTBITWIDTH?} ${INSTNAME?}"
+    if [ $? -ne 0 ]; then
+        # Restore the default dbm cfg file
+        rm -f ${newdb2systm?}
+        copy_dbmcfg
+        orig_value=${INSTTYPE?}
+        prepare_itype
+        new_insttype=${INSTTYPE?}
+        INSTTYPE=${orig_value?}
+        display_msg ${DB2CAT?} 282 \
+           'DBI1282W The database manager configuration files could not be merged. The previous database manager configuration file is %s. The previous instance type is %s, and the current instance type is %s.\n' \
+            ${olddb2systm?} `display_inst_type ${INSTTYPE_ORIG?}` `display_inst_type ${new_insttype?}`
+    fi
+
+    trax upgrade_instinfo
+}
+
+copy_UDFs()
+{
+    trac copy_UDFs $@
+    set ${setopts?}
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then
+        if  [ ! -d "${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}/function" ]; then
+            old_sqllib_function=${INSTHOME?}${OLDSQLLIB?}/function
+        else
+            old_sqllib_function=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}/function
+        fi
+        new_sqllilb_function=${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/function
+    else
+        old_sqllib_function=${INSTHOME?}${OLDSQLLIB?}/function
+        new_sqllilb_function=${INSTHOME?}/sqllib/function
+    fi
+    
+    if [ ! -d "${old_sqllib_function?}" ]; then
+        return ${TRUE?}
+    fi
+    # Copy all files (but not symlinks pointing to old DB2 installation directory) 
+    # from the OLDSQLLIB/function directory to the sqllib/function directory.
+    ls -1 ${old_sqllib_function?} | while read fname; do
+
+        if [ ! -h ${old_sqllib_function?}/${fname?} ] ; then
+            function_dir=${old_sqllib_function?}
+            OLD_LINKS=""
+            if [ -d ${function_dir?}/${fname?} ]
+            then
+                OLD_LINKS=`cd ${function_dir?}/${fname?}; \
+                     find . -type l -exec ls -l {} \; |\
+                     grep ${DB2IPRDDIR?} |  awk '{print $(NF-2)}'`
+                link_bk_dir=${function_dir?}/${fname?}_${PROCID?}
+                link_bk_dir_save=${function_dir?}/${fname?}_${PROCID?}_save
+                link_org_dir=${function_dir?}/${fname?}
+                if [ "${OLD_LINKS?}" != "" ]; then
+                    if [ -d ${link_bk_dir?} ]; then
+                       mv  ${link_bk_dir?} ${link_bk_dir_save?}
+                    fi
+                    mkdirectory  ${link_bk_dir?}
+                    for file_link in ${OLD_LINKS?}; do
+                       mv ${link_org_dir?}/${file_link?} ${link_bk_dir?}/.
+                    done
+                fi
+            fi
+
+            if [ ! -d "${new_sqllilb_function?}" ]; then
+                   mkdirectory ${new_sqllilb_function?}
+                   chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${new_sqllilb_function?}
+                   mkpermission "u=rwx,g=rwxs,o=rx,+t" ${new_sqllilb_function?}
+            fi
+
+            (cd ${old_sqllib_function?}/; tar cf - ${fname?}) | \
+                   (cd ${new_sqllilb_function?}/; tar xf -)
+            if [ $? -ne 0 ] ; then
+                   display_msg ${DB2CAT?} 86 \
+                    'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                        ${old_sqllib_function?}/${fname?} \
+                        ${new_sqllilb_function?}/${fname?}
+                   stop_prog 1
+            fi
+            chg_owngrp ${INSTNAME?} ${INSTPGRP?} \
+                       ${new_sqllilb_function?}/${fname?}
+            if [ -d "${new_sqllilb_function?}/jar" ]; then
+               for my_jar in `find ${new_sqllilb_function?}/jar/ -type f -name *.jar -print`; do
+                  chmod 644 ${my_jar?}
+               done
+            fi
+            if [ "${OLD_LINKS?}" != "" ]; then
+                 mv ${link_bk_dir?}/* ${link_org_dir?}/.
+                 rmdir ${link_bk_dir?} 1>/dev/null 2>/dev/null
+                 if [ -d "${link_bk_dir_save?}" ]; then
+                     mv ${link_bk_dir_save?} ${link_bk_dir?}
+                 fi
+            fi
+        else
+            ls -1 -l ${old_sqllib_function?}/${fname?} | grep ${DB2DIR?} 1>/dev/null 2>/dev/null
+            if [ $? -ne 0 ]; then
+                ls -1 -l ${old_sqllib_function?}/${fname?} | grep ${DB2IPRDDIR?} 1>/dev/null 2>/dev/null
+                if [ $? -ne 0 ]; then
+                    if [ ! -d "${new_sqllilb_function?}" ]; then
+                         mkdirectory ${new_sqllilb_function?}
+                         chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${new_sqllilb_function?}
+                         mkpermission "u=rwx,g=rwxs,o=rx,+t" ${new_sqllilb_function?}
+                    fi
+                    (cd ${old_sqllib_function?}/; tar cf - ${fname?}) | \
+                       (cd ${new_sqllilb_function?}/; tar xf -)
+                    if [ $? -ne 0 ] ; then
+                       display_msg ${DB2CAT?} 86 \
+                         'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                             ${old_sqllib_function?}/${fname?} \
+                             ${new_sqllilb_function?}/${fname?}
+                       stop_prog 1
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    trax copy_UDFs
+}
+
+# Update the DBM config file for the instance
+updt_dbmcfg()
+{
+    trac updt_dbmcfg $@
+    set ${setopts?}
+
+    rc=1                  # Return code
+
+    rm -f ${TMPFILE1?}
+
+    # Make updates to the database manager configuration file
+    # using the LATEST version of "db2idbm" program
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/instance/db2idbm ${INSTNAME?} ${INSTHOME?} \
+               ${INSTPGRP?} ${INSTTYPE?} ${AUTHTYPE?} ${TMPFILE1?}"
+    rc=$?
+
+    if [ -s ${TMPFILE1?} ]; then
+        if [ ${DEBUG?} -eq ${TRUE?} ]; then
+            tee -a ${DB2INSTLOG?} < ${TMPFILE1?}
+        else
+            cat ${TMPFILE1?} >> ${DB2INSTLOG?}  # Append the logfile
+        fi
+    fi
+
+    say "Exited \"db2idbm\" program with return code ${rc?}...."
+    rm -f ${TMPFILE1?}
+
+    if [ ${rc?} -eq 2 ]; then
+        display_msg ${DB2CAT?} 1703 \
+            'DBI1703E No valid service name or port number found.'
+        stop_prog 1
+    elif [ ${rc?} -ne 0 ]; then
+        display_msg ${DB2CAT?} 281 \
+            'DBI1281E The database manager configuration file could not be initialized.'
+        stop_prog 1
+    fi
+
+    trax updt_dbmcfg
+}
+
+# Install/setup user exit program
+inst_userexit()
+{
+    trac inst_userexit
+    set ${setopts?}
+
+    # If a previous version of the user exit program exists, upgrade it.
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uexit ]
+    then
+        # Copy old db2uexit program
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uexit \
+                      ${INSTHOME?}/sqllib/adm/db2uexit
+        if [ $? -ne 0 ]
+        then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uexit \
+                ${INSTHOME?}/sqllib/adm/db2uexit
+            stop_prog 1
+        fi
+        mkpermission "ug=rx,o=" ${INSTHOME?}/sqllib/adm/db2uexit
+        chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${INSTHOME?}/sqllib/adm/db2uexit
+    fi
+
+    # Find the uext2 wrapper program to copy
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uext2 ]
+    then
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uext2 \
+                      ${INSTHOME?}/sqllib/adm/db2uext2
+        if [ $? -ne 0 ]
+        then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/adm/db2uext2 ${INSTHOME?}/sqllib/adm/db2uext2
+            stop_prog 1
+        fi
+        mkpermission "ug=rx,o=" ${INSTHOME?}/sqllib/adm/db2uext2
+        chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${INSTHOME?}/sqllib/adm/db2uext2
+    fi
+
+    trax inst_userexit
+}
+
+# Recover files for a DAS instance upgrade
+recover_das()
+{
+    trac recover_das $@
+    set ${setopts?}
+
+    cd ${INSTHOME?}
+    # copy selected files from sqllib_v5 to sqllib
+    cp -p ${OLDSQLLIB?}/*.out sqllib 1>/dev/null 2>/dev/null
+    cp -p ${OLDSQLLIB?}/*.prf sqllib 1>/dev/null 2>/dev/null
+    cp -p ${OLDSQLLIB?}/*.bak sqllib 1>/dev/null 2>/dev/null
+
+    if [ ! -d sqllib/schedule ]; then
+        mkdir -p sqllib/schedule
+        chg_owngrp ${INSTNAME?} ${INSTPGRP?} sqllib/schedule
+    fi
+    
+    cp -p ${OLDSQLLIB?}/schedule/schedule.dat sqllib/schedule 1>/dev/null 2>/dev/null
+    cp -p ${OLDSQLLIB?}/schedule/schedule.bak sqllib/schedule 1>/dev/null 2>/dev/null
+   
+    # copy files from dastmplist - if any
+    if [ -s ${DASTMPLIST?} ]; then
+        while read file
+        do
+            FROMDASDIR="sqllib_v${db2instver?}"
+            FROMFILE=`echo ${file?} | sed "s/sqllib\//${FROMDASDIR?}\//"`
+            cp -p ${FROMFILE?} ${file?} 1>/dev/null 2>/dev/null
+            if [ $? -ne 0 ]; then
+                display_msg ${DB2CAT?} 86 \
+                    'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                    ${FROMFILE?} ${file?}
+            fi
+        done < ${DASTMPLIST?}
+    fi
+
+    trax recover_das
+}
+
+# Restore file for instance specific setting
+
+restore_isetting()
+{
+    trac restore_isetting  $@
+    set ${setopts?}
+    BACKUP_DIR=$1
+    NEW_DIR=$2
+    FILE=$3
+    old_file="${BACKUP_DIR?}/${FILE?}"
+    new_file="${NEW_DIR?}/${FILE?}"
+    if [ -f ${old_file?} ]; then
+        cp -p ${old_file?} ${new_file?}
+        if [ $? -ne 0 ]; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${old_file?} ${new_file?}
+        fi
+    fi
+    trax restore_isetting
+}
+
+# Update selected variable in the instance registry
+update_registry()
+{
+    trac update_registry $@
+    set ${setopts?}
+    restore_list="profile.env userprofile usercshrc"
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]; then
+	old_dir=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}
+	new_dir=${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared
+    else
+        old_dir=${INSTHOME?}/${OLDSQLLIB?}
+        new_dir=${INSTHOME?}/sqllib         
+    fi
+    for restore_f in ${restore_list?}; do
+        restore_isetting ${old_dir?} ${new_dir?} ${restore_f?}
+    done
+
+    trax update_registry
+}
+
+chk_migrpath()
+{
+    trac chk_migrpath $@
+    set ${setopts?}
+
+    db2instver=$1          # DB2 version used by the instance
+
+    # If the instance is already using the current version
+    # of DB2, do not upgrade it.
+    if [ "X${db2instver?}" = "X${DB2VER?}" ]; then
+        display_msg ${DB2CAT?} 124 \
+            'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+        stop_prog 1
+    fi
+
+    # Check if the upgrade-path is supported
+
+    case ${db2instver?} in
+        ${DB2VER_V5?}|${DB2VER_V61?}|${DB2VER_V7?})
+            # Unsupported upgrade path, but may work
+            if [ ${FORCEMIGR?} -eq ${FALSE?} ]; then
+                display_msg ${DB2CAT?} 124 \
+                    'DBI1124E Instance %s cannot be upgraded.\n' \
+                    ${INSTNAME?}
+                stop_prog 1
+            fi
+            ;;
+        ${DB2VER_V97?}|${DB2VER_V101?}|${DB2VER_V105?}|${DB2VER_V106?}|${DB2VER_V107?}|${DB2VER_V108?}|${DB2VER_V111?}|${DB2VER_V98?}) :    # do nothing - supported upgrade path
+            ;;
+        *)
+            version_from=`echo ${db2instver?} | sed 's/\(.$\)/.\1/'` 2>&1 1>/dev/null
+            version_to=`echo ${DB2VER?} | sed 's/\(.$\)/.\1/'` 2>&1 1>/dev/null
+            display_msg ${DB2CAT?} 453 \
+                'DBI1453E You are trying to upgrade an instance to version %s. Instance upgrade from version %s to current version is not supported.\n' \
+                ${version_to?} ${version_from?}
+            stop_prog 1
+            ;;
+    esac
+
+    trax chk_migrpath
+    return ${TRUE?}
+}
+
+# Merge the .update file in sqllib_shared to
+# the .update file in sqllib_shared backup directory
+merge_update_file()
+{
+    trac merge_update_file $@
+    set ${setopts?}
+    
+    hostname=`hostname`
+    _update_file="${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/.update"
+    _update_file_bk_dir="${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}"
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] && [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+        if [ -f ${_update_file_bk_dir?}/.update ]; then
+            # Detect the hostname changes
+            # Get the hostname recorded if there is a hostname change
+            if [ "X`${new_DB2DIR?}/bin/db2fupdt -f ${instprof_insthome?}/.update -p ${hostname?}`" = "X" ];
+            then
+               # Check if any record exisits with long or short name
+               dmsg "hostname : ${hostname?}"
+                shortHost=`echo ${hostname?} | awk -F'.' '{print $1}'`
+               dmsg "shortHost : ${shortHost?}"
+               updateHost=`grep -w ${shortHost?} ${_update_file_bk_dir?}/.update | awk -F'=' '{print $1}'`
+               dmsg "Host name in .update file :${updateHost?}"
+               sed -ne "/^${updateHost?}=/!p" ${_update_file_bk_dir?}/.update > ${_update_file_bk_dir?}/.updatetmp
+            else
+               sed -ne "/^${hostname?}=/!p" ${_update_file_bk_dir?}/.update > ${_update_file_bk_dir?}/.updatetmp
+            fi
+            if [ -f ${_update_file_bk_dir?}/.updatetmp ]; then
+                if [ -f ${_update_file?} ] ; then
+                    cat ${_update_file_bk_dir?}/.updatetmp >> ${_update_file?}
+                fi
+                rm -f ${_update_file_bk_dir?}/.updatetmp
+            fi
+        fi  
+    fi
+
+    trax merge_update_file
+}
+
+handle_gskit_symlink()
+{
+    trac handle_gskit_symlink $@
+    set ${setopts?}
+
+    DB2DIR_OLD=$1
+    BITS=$2
+
+    # sanity:  bail if DB2DIR is not set
+    if [ "X${DB2DIR?}" = "X" ]; then
+        return ${TRUE?}
+    fi
+
+    # bail if DB2DIR_OLD isn't there for some reason
+    if [ ! -d ${DB2DIR_OLD?} ]; then
+        return ${TRUE?}
+    fi
+    
+    # if old DB2DIR and new DB2DIR are same,  nothing to do
+    if [ "${DB2DIR_OLD?}" = "${DB2DIR?}" ]; then
+        return ${TRUE?}
+    fi
+    
+    # get the gskit link in old DB2DIR -- if it isn't there, quit now - this is
+    # probably pre-v10
+    GSKIT_OLD_LIB=${DB2DIR_OLD?}/lib${BITS?}/gskit
+    if [ ! -h ${GSKIT_OLD_LIB?} ]; then
+        return ${TRUE?}
+    fi
+    GSKIT_OLD_LIB=`ls -ld ${GSKIT_OLD_LIB?} | awk '{ print $NF }'`
+    
+    # construct old default gskit path
+    GSKIT_OLD_DEFAULT_LIB=${DB2DIR_OLD?}/lib${BITS?}/gskit_db2
+
+    # compare.  if customer is using default gskit,  we're done.
+    if [ "${GSKIT_OLD_LIB?}" = "${GSKIT_OLD_DEFAULT_LIB}" ]; then    
+        return ${TRUE?}
+    fi
+
+    # now get the gskit link in the new DB2DIR -- if it isn't there,  customer has
+    # done something bad to their installation and we bail.
+    GSKIT_LIB=${DB2DIR?}/lib${BITS?}/gskit
+    if [ ! -h ${GSKIT_LIB?} ]; then
+        return ${TRUE?}
+    fi
+    GSKIT_LIB=`ls -ld ${GSKIT_LIB?} | awk '{ print $NF }'`
+    GSKIT_DEFAULT_LIB=${DB2DIR?}/lib${BITS?}/gskit_db2
+    
+    # if there is already a custom link here,  DO NOT UPDATE IT.  we're done.
+    if [ "${GSKIT_LIB?}" != "${GSKIT_DEFAULT_LIB}" ]; then    
+        return ${TRUE?}
+    fi
+
+    # at this point,  we have a custom link in DB2DIR_OLD,  and a default link 
+    # in DB2DIR.  update it,  and make note.
+    dmsg "Found custom GSKit link in ${DB2DIR_OLD?}/lib${BITS?}.  Updating ${DB2DIR?}/lib${BITS?}..."
+    GSKIT_LIB=${DB2DIR?}/lib${BITS?}/gskit
+    rm -f ${GSKIT_LIB?}
+    ln -s ${GSKIT_OLD_LIB?} ${GSKIT_LIB?}
+
+    trax handle_gskit_symlink
+}
+
+# Initialize the instance upgrade process
+# Ensure that everthing is OK to upgrade the instance
+# Sets env variables DB2INSTVER, DB2IPRDDIR, and OLDSQLLIB.
+init_imigrate()
+{
+    trac init_imigrate $@
+    set ${setopts?}
+
+    # Set the value of vars INSTHOME and INSTPGRP
+    # and check their validity
+    get_instance
+    OLD_INSTBITWIDTH=${INSTBITWIDTH?}
+
+    #SD Instance needs SD_INSTPROF
+    get_instance ${INSTNAME?}
+    chk_itype
+
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ]
+    then
+       set_sd_instprof ${INSTNAME?}
+       if [ $? -ne ${TRUE?} ]
+       then
+          echo "Unable to find SD_INSTPROF value from global reg"
+          stop_prog ${FALSE?}
+       fi
+    fi
+
+    # check if this is root instance
+    query_instuse ${INSTNAME?} "InstallerID" 0
+    InstallerID="${INSTUSE_VALUE?}"
+    if [ ${InstallerID?} -ne 0 ]; then
+        display_msg ${DB2CAT?} 155 \
+            'DBI1155E  The command failed for the DB2 non-root instance %s.\n' ${INSTNAME?}
+        stop_prog 1
+    fi
+
+    # Clean up any db dir upgrade logs from previous attempt
+    clean_migr_logs "REMOVE"
+
+    # Define special variables
+    def_specials
+
+    # Issue an error message and exit if the sqllib directory does not exist.
+    if [ ! -d ${INSTHOME?}/sqllib ] ; then
+        display_msg ${DB2CAT?} 81 \
+            'DBI1081E The file or directory %s is missing.\n' \
+            ${INSTHOME?}/sqllib
+        stop_prog 1
+    fi
+
+    # Check the DB2 version for the current instance
+    chk_version ${INSTNAME?}
+    DB2INSTVER=$?                 # DB2 version for the instance INSTNAME
+    DB2IPRDDIR="${db2proddir?}"   # DB2 product dir for instance INSTNAME
+
+    # DB2DIR is different from DB2IPRDDIR. Variable DB2DIR refers to the
+    # to DB2 product dir for the LATEST version of DB2, whereas, DB2IPRDDIR
+    # refers the DB2 product currently used by instance INSTNAME. Similarly,
+    # there is a difference between DB2VER and DB2INSTVER. DB2VER refers
+    # to the latest version of DB2, whereas, DB2INSTVER refers to the DB2
+    # version of the instance INSTNAME.
+
+    # Check that this upgrade from DB2INSTVER to DB2VER is supported
+    chk_migrpath ${DB2INSTVER?}
+
+    # Check if it's partitioned ese to non-ese
+    chk_partitioned_ese_to_no_ese
+    
+    # Get the instance type
+    get_insttype ${INSTNAME?} ${DB2INSTVER?}
+
+    INSTTYPE_ORIG=${INSTTYPE?}
+
+    INSTTYPE_KEEP_STR=""
+    if [ ${KEEPITYPE?} -eq ${TRUE?} ]; then
+        case ${INSTTYPE_ORIG?} in
+            ${ITYPE_EEE?}) INSTTYPE_KEEP_STR="ese";;
+            ${ITYPE_SRV?}) INSTTYPE_KEEP_STR="wse";;
+            ${ITYPE_PER?}) INSTTYPE_KEEP_STR="standalone";;
+            ${ITYPE_CLN?}) INSTTYPE_KEEP_STR="client";;
+        esac
+    fi
+
+    # Check if the instance to be upgraded is a Data Link instance
+    if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+        if [ ! -f ${DB2DIR?}/instance/dlfmcrt ]; then
+            display_msg ${DB2CAT?} 139 'DBI1139E Data-Links File Manager not installed.\n'
+            stop_prog 1
+        fi
+    fi
+
+    # DAS instance cannot be upgraded
+    if [ ${INSTTYPE?} -eq ${ITYPE_DAS?} ]; then
+        display_msg ${DB2CAT?} 124 \
+            'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+        stop_prog 1
+    fi
+
+    # Set the env variable OLDSQLLIB
+    case ${DB2INSTVER?} in
+        ${DB2VER_V108?})  OLDSQLLIB="sqllib_v108" ;;
+        ${DB2VER_V107?})  OLDSQLLIB="sqllib_v107" ;;
+        ${DB2VER_V106?})  OLDSQLLIB="sqllib_v106" ;;
+        ${DB2VER_V105?})  OLDSQLLIB="sqllib_v105" ;;
+        ${DB2VER_V101?})  OLDSQLLIB="sqllib_v101" ;;
+        ${DB2VER_V98?})   OLDSQLLIB="sqllib_v98"  ;;
+        ${DB2VER_V97?})   OLDSQLLIB="sqllib_v97"  ;;
+        ${DB2VER_V95?})   OLDSQLLIB="sqllib_v95"  ;;
+        ${DB2VER_V91?})   OLDSQLLIB="sqllib_v91"  ;;
+        ${DB2VER_V81?})   OLDSQLLIB="sqllib_v81"  ;;
+        ${DB2VER_V71?})   OLDSQLLIB="sqllib_v71"  ;;
+        ${DB2VER_V61?})   OLDSQLLIB="sqllib_v61"  ;;
+        ${DB2VER_V5?})    OLDSQLLIB="sqllib_v5"   ;;
+        ${DB2VER_V2?})    OLDSQLLIB="sqllib_v2"   ;;
+        ${DB2VER_DJ?})    OLDSQLLIB="sqllib_dj211";;
+        ${DB2VER_V1?})    OLDSQLLIB="sqllib_v1"   ;;
+        ${DB2VER_PE11?})  OLDSQLLIB="sqllib_pe11" ;;
+        ${DB2VER_PE12?})  OLDSQLLIB="sqllib_pe12" ;;
+        *)                OLDSQLLIB="sqllib_v${DB2INSTVER?}" ;;
+    esac
+
+    # Set the env variable OLDSQLLIBSHARED
+    case ${DB2INSTVER?} in
+        ${DB2VER_V98?})   OLDSQLLIBSHARED="sqllib_shared_v98"  ;;
+        *)                OLDSQLLIBSHARED="sqllib_shared_v${DB2INSTVER?}" ;;
+    esac
+
+    # Ensure that the AUTHTYPE value is valid
+    chk_authtype
+
+    # Check if the backup sqllib directory already exists
+    if [ -d ${INSTHOME?}/${OLDSQLLIB?} ] ; then
+        display_msg ${DB2CAT?} 82 \
+            'DBI1082E The file or directory %s already exists.\n' \
+            ${INSTHOME?}/${OLDSQLLIB?}
+        stop_prog 1
+    fi
+
+    # Verify FencedID info if a DB2 server is installed
+    server_installed
+    if [ $? -eq ${TRUE?} -a "X${INSTTYPE_KEEP_STR?}" != "Xclient" ]; then
+        verify_fencinfo
+    fi
+
+    # Check that home dir is on a valid filesystem
+    chk_fsystype ${INSTHOME?}
+
+    # Check that home dir filesystem has enough space
+    # Raji: dynamite : flexibility to operate with 2 releases at a time
+    # Hence 3 sqllib's. Check for 6GB space .
+    if [ ${ONLINE_PREPARE_SQLLIB_VER?}  -eq  ${TRUE?} ]; then
+       chk_fsysspace ${INSTHOME?} 6291456
+    else
+       chk_fsysspace ${INSTHOME?} ${SPACEREQ?}
+    fi
+    # Raji end
+
+    chk_bitwidth       # Check the bitwidth of the instance to be upgraded
+
+    # Set profile.env file path for the instance
+    INSTENVPRO="${INSTHOME?}/sqllib/profile.env"
+    INSTENVPROBAK="${INSTHOME?}/sqllib/backup_profile.env"
+
+    # Verify that all cataloged local databases can be upgraded
+    # If it is the fisrt host, it will call chk_databases
+    # Set the value of vars IS_FIRST_HOST
+    # Do not call chk_databases for client
+    is_firsthost
+    IS_FIRST_HOST=$?
+    if [ ${IS_FIRST_HOST?} -eq ${TRUE?} -a ${INSTTYPE?} -ne ${ITYPE_CLN?} ]; then
+       if [ ${SKIPDBCHK?} -ne ${TRUE?} ]; then
+        chk_databases
+        #echo " skipping checkupgrade for now"
+       fi
+    fi
+
+    # Set the env variable BAKDB2SYSTM for backup dbmcfg file
+    BAKDB2SYSTM="${SQLLIBBACKUP?}/${OLDDB2SYSTM?}"
+
+    # Retrieve environment variables
+    init_envlist
+
+  if [ ${ONLINE_PREPARE_SQLLIB_VER?} -ne ${TRUE?} ]; then
+    # Backup useful info about the instance
+    if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+        backup_instinfo ${SQLLIBBACKUP?}
+    fi
+  fi
+
+    trax init_imigrate
+}
+
+migr_instance()
+{
+    trac migr_instance $@
+    set ${setopts?}
+    
+    nosd_or_sd_is_first=${FALSE?}
+ 
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ];then
+        old_path=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}
+        new_path=${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared
+        if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+            nosd_or_sd_is_first=${TRUE?}
+        fi
+        
+    else
+        old_path=${INSTHOME?}/${OLDSQLLIB?}
+        new_path=${INSTHOME?}/sqllib
+        nosd_or_sd_is_first=${TRUE?}
+    fi
+    
+    # If we pass this point, undo all changes if any error occurs
+    UNDOCHG=${TRUE?}
+
+    # Terminate the DLFM instance, if it is one
+    if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+        dmsg "Calling dlfm stop..."
+        ${DB2DIR?}/instance/db2iexec ${INSTNAME?} "dlfm stop"  1> /dev/null 2> /dev/null
+        status=$?
+        dmsg "dlfm stop status: ${status?}"
+
+        if [ ${status?} -ne ${TRUE?} ]; then
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        fi
+
+        # to recreate, we need its current port.
+        get_regvar DLFM_PORT
+        if [ -z "${REGVALUE?}" ]
+        then
+            get_envvar DLFM_PORT
+            if [ -z "${ENVVALUE?}" ]
+            then
+                display_msg ${DB2CAT?} 124 \
+                    'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+                stop_prog 1
+            fi
+            dlfm_port=${ENVVALUE?}
+        else
+            dlfm_port=${REGVALUE?}
+        fi
+
+    fi
+
+    # Is this the DQP instance?
+    DQPINSTANCE=""
+    case ${DB2INSTVER?} in
+        ${DB2VER_V61?})
+            if ${DB2IPRDDIR?}/instance/db2iset -g DQPSERVER > /dev/null 2> /dev/null
+            then
+                DQPINSTANCE=`${DB2IPRDDIR?}/instance/db2iset -g DQPSERVER`
+                if [ ${DQPINSTANCE?} != ${INSTNAME?} ]
+                then
+                    # This isn't the DQP instance, no need to remember it.
+                    DQPINSTANCE=""
+                fi
+            fi
+        ;;
+        ${DB2VER_V81?}|${DB2VER_V71?})
+            query_instuse ${INSTNAME?} DQPSERVER ${FALSE?}
+            if [ ${INSTUSE_VALUE?} -eq ${TRUE?} ]; then
+                DQPINSTANCE=${INSTNAME?}
+            fi
+        ;;
+    esac
+
+    # Check and see if this is an OLAP Server instance
+    query_instuse ${INSTNAME?} OLAPSK ${FALSE?}
+    OLAPInstance=$?
+
+    # See if instance is a Server instance and if a V8 Server product is installed
+    server_instance
+    serverInstance=$?
+    server_installed
+    serverInstalled=$?
+
+    rm -f ${TMPFILE2?}
+
+    # If Non-DB2 Data Sources are installed while upgrading DJ, RCon must be installed
+    # in V8; otherwise installation will not procede.
+    dj_env CHECK
+    if [ $? -eq 1 ]; then
+        if [ ! -f ${DB2DIR?}/bin/djxlink ]; then
+            #if [ ! -f ${DB2DIR?}/cfg/db2rcon.lvl ]; then
+            display_msg ${DB2CAT?} 144 'DBI1144E Relational Connect not installed.\n'
+            stop_prog 1
+            #fi
+        fi
+    fi
+
+    # Check if V8 OLAP Starter Kit is installed if needed
+    if [ ${OLAPInstance?} -eq ${TRUE?} ]; then
+        if [ ! -f ${DB2DIR?}/instance/db2olset ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 136 'DBI1136W OLAP Starter Kit not installed.\n'
+        fi
+    fi
+
+    # Check if DB2 Warehouse Manager or Warehouse Manager Connectors is available
+    if [ -f ${INSTHOME?}/sqllib/cfg/db2wmgr_c.lvl -o -f ${INSTHOME?}/sqllib/cfg/db2wm.lvl ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2wmc.lvl -o ! -f ${DB2DIR?}/cfg/db2wm.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 182 'DBI1182W DB2 Warehouse Manager and/or DB2 Warehouse Manager Connectors are not available..\n'
+        fi
+    fi
+
+    # Check if V8 Spatial Extender is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/cfg/db2gse.lvl ]; then
+         if [ ! -f ${DB2DIR?}/gse/coordref.del ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 183 'DBI1183W Spatial Extender not installed.\n'
+        fi
+    fi
+
+    # Check if V8 Life Sciences is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/lib/liblsfile.a ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2lsdc.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 184 'DBI1184W Life Sciences Data Connect not installed.\n'
+        fi
+    fi
+
+    # Check if V8 Query Patroller is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/cfg/dqplevel ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2qp.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 138 'DBI1138W Query Patroller not installed. \n'
+        fi
+    fi
+
+    # Check if a server version of DB2 v8 is installed if needed
+    if [ ${serverInstance?} -eq ${TRUE?} ]; then
+        if [ ${serverInstalled?} -ne ${TRUE?} ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 137 'DBI1137W Server Product not installed.\n'
+        fi
+    fi
+
+    # Look into forcing upgrade only if Forcing upgrade is required
+    if [ ${FORCEMIGREQ?} -eq ${TRUE?} ]; then
+        if [ ${FORCEMIGR?} -eq ${FALSE?} ]; then
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        else
+            if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+                 DB2DLNK=${TRUE?}
+            else
+                 DB2DLNK=${FALSE?}
+            fi
+            CFGFILE=""
+            CFGFILETYPE=""
+            prepare_itype
+            display_msg ${DB2CAT?} 140 'DBI1140W Command is being Forced.\n'
+        fi
+    fi
+    
+    # If forcing upgrade is required, push the -F into db2icrt_local
+    if [ ${FORCEMIGR?} -eq ${TRUE?} ]; then
+        ICRTFLAGS="-F ${ICRTFLAGS?}"
+    fi
+
+    if [ "X${INSTTYPE_KEEP_STR?}" != "X" ]; then
+        ICRTFLAGS="-s ${INSTTYPE_KEEP_STR?} ${ICRTFLAGS?}"
+    fi
+
+    # If upgrade debug output is required, push the -d into create scripts
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        ICRTFLAGS="-d ${ICRTFLAGS?}"
+    fi
+    
+    # If instance type is SD and its not the first host , pass -N to db2icrt_local
+    if [  ${INSTTYPE?} -eq ${ITYPE_SD?} -a ${IS_FIRST_HOST?} -ne ${TRUE?} ]; then
+       ICRTFLAGS="-N ${ICRTFLAGS?}"
+    fi
+
+    # Check if the instance is still running.  If not, we won't continue as
+    # it's not really safe.
+    if [ ${IS_FIRST_HOST?} -eq ${TRUE?} -a ${INSTTYPE?} -ne ${ITYPE_SD?} ]; then
+        tmp_arg=""
+        if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+            tmp_arg="db2iexec"
+        fi 
+        chk_instance_stopped ${INSTNAME?} ${INSTHOME?}/sqllib/bin ${tmp_arg?}
+        status=$?
+    
+        if [ ${status?} -eq ${FALSE?} ]
+        then
+            display_msg ${DB2CAT?} 250 \
+                'DBI1250E Applications are still using instance %s.\n' ${INSTNAME?}
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        fi
+    fi
+    
+    # Stop DB2 ACS services
+    db2_acs_stop_disable  ${INSTNAME?} "stop" "${DB2IPRDDIR?}" "${DB2DIR?}/instance/db2iupgrade"
+
+    # Remove icons on Linux platforms
+    if [ "X${OLDSQLLIB?}" = "Xsqllib_v81" -a -x ${DB2IPRDDIR?}/bin/db2rmicons ]; then
+       ${DB2IPRDDIR?}/bin/db2rmicons ${INSTNAME?} 1> /dev/null 2> /dev/null
+    fi
+    
+    #check to see if instance has a token
+    HAS_TOKEN=${FALSE?}
+    ${DB2DIR?}/instance/db2ickts -k ${INSTNAME?} 2> /dev/null 1> /dev/null
+    if [ $? -eq ${TRUE?} ]; then
+        HAS_TOKEN=${TRUE?}
+    fi
+
+    # profile.env gets removed by rm_instlist, this is a hack to preserve it
+    if [ -f ${new_path?}/profile.env ]; then
+        mv ${new_path?}/profile.env ${new_path?}/profile_bak.env
+    fi
+    
+    # Remove instance name from the OLD instance list
+    
+    rm_instlist ${INSTNAME?} ${DB2INSTVER?} ${DB2IPRDDIR?}
+    
+    # rename profile_bak.env to profile.env
+    if [ -f ${new_path?}/profile_bak.env ]; then
+        mv ${new_path?}/profile_bak.env ${new_path?}/profile.env
+    fi
+
+    # If we get this far, backup old sqllib directory and continue upgrade
+    backup_old_sqllib
+
+    # If we get this far, backup old sqllib_shared directory and continue upgrade
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] &&  [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+        backup_old_sqllib_shared
+    fi
+
+    # db2icrt_local may need to know what we're upgrading from.
+    DB2ICRT_MIGRATIONINSTTYPE=${INSTTYPE?}
+    export DB2ICRT_MIGRATIONINSTTYPE
+
+    # db2icrt_local etc. no longer work if the previous version has links.
+    if [ -x ${DB2IPRDDIR?}/cfg/db2rmln ]
+    then
+        ${DB2IPRDDIR?}/cfg/db2rmln
+    fi
+
+    # Create an instances for the latest version of DB2
+    if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+        dmsg "${PROGDIR?}/dlfmcrt -p ${dlfm_port?} ${DLFMCRTFLAGS?} ${INSTNAME?}"
+        ${PROGDIR?}/dlfmcrt ${ICRTFLAGS?} -p ${dlfm_port?} ${DLFMCRTFLAGS?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=dlfmcrt
+    elif [ -z "${FENCEDID?}" ]; then       # If fencedID is NOT specified
+        dmsg "${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} ${INSTNAME?}"
+        ${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=db2icrt_local
+    else
+        dmsg "${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} -u ${FENCEDID?} ${INSTNAME?}"
+        ${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} -u ${FENCEDID?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=db2icrt_local
+    fi
+
+    if [ ${rc?} -eq 0 ]; then
+        if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] && [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+            merge_update_file
+            /* Copy the db2instanceinfo.reg file */
+           old_file=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}/cfg/db2instanceinfo.reg;
+           if [ -f ${old_file?} ]; then
+              cp -pf ${old_file?} ${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared/cfg
+           fi
+        fi
+    fi
+   
+    # If it's upgrading a DQP instance, do the create part here.
+    #if [ ${rc?} -eq 0 -a -n "${DQPINSTANCE?}" ]; then # do not use -n test if uncommented
+    #    :
+    #fi
+
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        dmsg "    **** Start of output from ${prog?} command **** "
+        if [ -s ${TMPFILE2?} ]; then
+            cat ${TMPFILE2?} 2>&1 | tee -a ${DB2INSTLOG?}
+        fi
+        dmsg "    **** End of output from ${prog?} command **** "
+    fi
+
+    dmsg " Return code from ${prog?} = ${rc?} "
+    if [ ${rc?} -ne 0 ] ; then
+        display_msg ${DB2CAT?} 124 \
+            'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+        stop_prog 1
+    fi
+    rm -f ${TMPFILE2?}
+
+    # If server was an OLAP server instance, enable OLAP functionality
+    if [ ${OLAPInstance?} -eq ${TRUE?} ]; then
+        if [ -f ${DB2DIR?}/instance/db2olset ]; then
+            ${DB2DIR?}/instance/db2olset ${INSTNAME?}
+        fi
+    fi
+
+    # Create FencedID Info file, if needed
+    create_fencinfo
+
+    # Copy of the database, node, and/or dcs directories
+    copy_db_dirs
+
+    # Copy UDFs
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        copy_UDFs
+    fi
+    
+    # Install/setup user exit program
+    inst_userexit
+    
+    if [ ${HAS_TOKEN?} -eq ${TRUE?} ]; then
+        ${DB2DIR?}/install/db2ls -q | grep TEXT_SEARCH 2> /dev/null 1> /dev/null
+        if [ $? -eq ${TRUE?} ]; then
+            if [ -d ${INSTHOME?}/${OLDSQLLIB?}/db2tss/config ]; then
+                tssHome="${INSTHOME?}/sqllib/db2tss"
+                cp -pr ${INSTHOME?}/${OLDSQLLIB?}/db2tss/config ${tssHome?}
+                ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${tssHome?}/bin/configTool configureParams -configPath ${tssHome?}/config -installPath ${DB2DIR?}/db2tss 2>&1"
+            fi
+        fi
+    fi
+    
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini ]; then
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini \
+                      ${INSTHOME?}/sqllib/cfg/db2cli.ini
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini \
+                ${INSTHOME?}/sqllib/cfg/db2cli.ini
+        fi
+    fi 
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -f ${old_path?}/db2nodes.cfg ]; then
+        cp -p ${old_path?}/db2nodes.cfg \
+                      ${new_path?}/db2nodes.cfg
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${old_path?}/db2nodes.cfg \
+                ${new_path?}/db2nodes.cfg
+        fi
+    fi 
+        
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg ]; then
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg \
+                      ${INSTHOME?}/sqllib/dqpnodes.cfg
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg \
+                ${INSTHOME?}/sqllib/dqpnodes.cfg
+        fi
+    fi 
+
+    #restore IBMLDAPSecurity.ini
+    get_envvar DB2LDAPSecurityConfig
+    if [ -z "${ENVVALUE?}" ]; then
+        IBMLDAPSECURITYINIOLDPATH="${INSTHOME?}/${OLDSQLLIB?}/cfg/IBMLDAPSecurity.ini"
+        IBMLDAPSECURITYININEWPATH="${INSTHOME?}/sqllib/cfg/IBMLDAPSecurity.ini"
+    else
+        echo ${ENVVALUE?} | grep "^${INSTHOME?}/sqllib/" 2>/dev/null 1>/dev/null
+        if [ $? -eq 0 ]; then
+            IBMLDAPSECURITYINIOLDPATH=`echo ${ENVVALUE?} | sed 's#'${INSTHOME?}'/sqllib/#'${INSTHOME?}'/'${OLDSQLLIB?}'/#'`
+            IBMLDAPSECURITYININEWPATH=${ENVVALUE?}
+        fi
+    fi
+
+    if [ -f "${IBMLDAPSECURITYINIOLDPATH?}" ]; then
+        cp -p ${IBMLDAPSECURITYINIOLDPATH?} ${IBMLDAPSECURITYININEWPATH?}
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${IBMLDAPSECURITYINIOLDPATH?} ${IBMLDAPSECURITYININEWPATH?}
+        fi
+    fi
+
+    #upgrade db2audit.cfg
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -f ${old_path?}/security/db2audit.cfg ]; then
+        rm -f ${new_path?}/security/db2audit.cfg 2>&1 1>/dev/null
+        cp -p ${old_path?}/security/db2audit.cfg ${new_path?}/security
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2imaudcfg" 1>/dev/null 2>/dev/null
+        if [ $? -ne 0 ] ; then
+            rm -f ${new_path?}/security/db2audit.cfg 2>&1 1>/dev/null
+            if [ -f ${DB2DIR?}/security64/db2audit.cfg ]; then
+                copyfile ${DB2DIR?}/security64 ${new_path?}/security db2audit.cfg
+            elif [ -f ${DB2DIR?}/security32/db2audit.cfg ]; then
+                copyfile ${DB2DIR?}/security32 ${new_path?}/security db2audit.cfg
+            fi
+            if [ -f ${new_path?}/security/db2audit.cfg ]; then
+                chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${new_path?}/security/db2audit.cfg
+                mkpermission "u=rw,go=r" ${new_path?}/security/db2audit.cfg
+            fi
+        fi
+    fi
+
+    #copy back auditdata
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -d ${old_path?}/security/auditdata -a -d ${new_path?}/security/auditdata ]; then
+        cp -prf ${old_path?}/security/auditdata ${new_path?}/security 2>&1 1>/dev/null
+    fi
+    
+    # Update instance registry
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        update_registry
+    fi
+
+    # Upgrade all required files/dirs for the instance
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        upgrade_instinfo
+    fi
+
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] ; then
+        ${DB2DIR?}/instance/db2iset -i ${INSTNAME?} DB2MEMMAXFREE=
+    fi
+
+    # Upgrade Data Joiner environement variables (if they exist)
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        dj_env MIGRATE
+    fi
+
+    # Upgrade any other environment variables, as required
+    migr_environment
+    
+    # Upgrade any registry settings, as required.
+    migr_registry
+
+    # If Relational Connect was present in the previous version, copy settings file
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2dj.ini ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2dj.ini \
+            ${INSTHOME?}/sqllib/cfg/db2dj.ini
+        # If Relational Connect is not present in v8, issue a warning
+        if [ ! -f ${DB2DIR?}/cfg/db2rcon.lvl ]; then
+            display_msg ${DB2CAT?} 143 'DBI1143W Relational Connect not installed.\n'
+        fi
+    fi
+
+    # If upgrading an OLAP instance, copy over the rsm.cfg file if it exists
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/bin/rsm.cfg ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/bin/rsm.cfg \
+            ${INSTHOME?}/sqllib/bin/rsm.cfg
+    fi
+
+    # If Classic Connect was present in the previous version, copy settings file
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/djxclassic2.cfg ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/cfg/djxclassic2.cfg \
+            ${INSTHOME?}/sqllib/cfg/djxclassic2.cfg
+    fi
+
+    # If SSLconfig.ini was in sqllib/cfg, copy it
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/SSLconfig.ini ]; then
+        copyfile ${INSTHOME?}/${OLDSQLLIB?}/cfg ${INSTHOME?}/sqllib/cfg SSLconfig.ini
+    fi
+    
+    # If SSLClientconfig.ini was in sqllib/cfg, copy it
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/SSLClientconfig.ini ]; then
+        copyfile ${INSTHOME?}/${OLDSQLLIB?}/cfg ${INSTHOME?}/sqllib/cfg SSLClientconfig.ini
+    fi
+    
+    # SSL configuration upgrade
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2imsslcfg" 2>&1 1>/dev/null
+    
+    # remove SSLconfig if exists
+    if [ -f ${INSTHOME?}/sqllib/cfg/SSLconfig.ini ]; then
+        rm -f ${INSTHOME?}/sqllib/cfg/SSLconfig.ini 2>&1 1>/dev/null
+    fi
+    
+    # remove SSLClientconfig if exists
+    if [ -f ${INSTHOME?}/sqllib/cfg/SSLClientconfig.ini ]; then
+        rm -f ${INSTHOME?}/sqllib/cfg/SSLClientconfig.ini 2>&1 1>/dev/null
+    fi
+
+    # Move any db dir log files to sqllib/db2dump directory
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        clean_migr_logs "SAVE"
+    else
+        clean_migr_logs "REMOVE"
+    fi
+
+    # if old mmm config file, copy it.
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/db2md_config.xml ]
+    then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/db2md_config.xml ${INSTHOME?}/sqllib
+    fi
+
+    # If the original instance is 32-bit, we need to link sqllib/lib to lib32
+    if [ "X${BitWidth_M?}" = "X32" ]; then
+       cd ${INSTHOME?}/sqllib
+       rm -f ${INSTHOME?}/sqllib/lib 2>&1 1>/dev/null
+       ln -s lib32 ${INSTHOME?}/sqllib/lib
+    fi
+
+    # Upgrade DB2 ACS
+    for license_file in ${INSTHOME?}/${OLDSQLLIB?}/acs/${ACS_LIC?} ; do break; done
+    if [ -f ${license_file?} \
+         -a -d ${INSTHOME?}/${OLDSQLLIB?}/acs \
+         -a -d ${INSTHOME?}/sqllib/acs ]; then
+       rm -rf ${INSTHOME?}/sqllib/acs
+    
+       cp -prf ${INSTHOME?}/${OLDSQLLIB?}/acs ${INSTHOME?}/sqllib
+    
+    fi
+
+    if [ ! -f ${license_file?} \
+           -a -d ${INSTHOME?}/${OLDSQLLIB?}/acs \
+           -a -d ${INSTHOME?}/sqllib/acs ]; then
+       cd ${INSTHOME?}/${OLDSQLLIB?}/acs
+       find . -type d | \
+           while read dirname; do
+                 if [ ! -d ${INSTHOME?}/sqllib/acs/${dirname?} ]
+                 then
+                    cp -prf ${INSTHOME?}/${OLDSQLLIB?}/acs/${dirname?} ${INSTHOME?}/sqllib/acs 
+                 fi
+           done
+       find . -type f | \
+           while read filename; do
+                 if [ ! -f ${INSTHOME?}/sqllib/acs/${filename?} ]
+                 then
+                    cp -pf ${INSTHOME?}/${OLDSQLLIB?}/acs/${filename?} ${INSTHOME?}/sqllib/acs/${filename?}
+                 fi
+           done
+    fi
+
+    # copy the old instance.log
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/log/instance.log ]; then
+        cp -pf ${INSTHOME?}/${OLDSQLLIB?}/log/instance.log ${INSTHOME?}/sqllib/log
+    else
+        rm -f ${INSTHOME?}/sqllib/log/instance.log
+    fi
+
+    # copy the db2checkSD.log
+    if [ -f ${old_path?}/db2dump/db2checkSD.log ]; then
+        cp -pf ${old_path?}/db2dump/db2checkSD.log ${new_path?}/db2dump
+    fi
+
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2set -cleanup"
+    fi
+
+    # The below are only specific to PureScale   
+    
+    # copy the db2ha.sys
+    if [ -f ${old_path?}/cfg/db2ha.sys ]; then
+        cp -pf ${old_path?}/cfg/db2ha.sys ${new_path?}/cfg
+        # migrate the db2ha.sys file from pre V10.5 to V10.5 format and store it in db2instanceinfo.reg file
+        if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] ; then  
+           if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+              ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2hareg -migrate ${new_path?}/cfg/db2ha.sys  ${new_path?}/cfg/db2instanceinfo.reg" 1> /dev/null 2> /dev/null
+              if [ $? -ne 0 ] ; then
+                 display_msg ${DB2CAT?} 86 \
+                     'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                 ${new_path?}/cfg/db2ha.sys \
+                 ${new_path?}/cfg/db2instanceinfo.reg
+              fi
+           fi
+        else
+          ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2hareg -migrate ${new_path?}/cfg/db2ha.sys ${new_path?}/cfg/db2instanceinfo.reg" 1> /dev/null 2> /dev/null
+          if [ $? -ne 0 ] ; then
+             display_msg ${DB2CAT?} 86 \
+                 'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                  ${new_path?}/cfg/db2ha.sys \
+                  ${new_path?}/cfg/db2instanceinfo.reg
+          fi
+   
+        fi
+    fi
+   
+    # Set the registry variable DB2RSHCMD and repair cluster
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] &&  [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+	
+		${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2set DB2RSHCMD=/usr/bin/ssh"
+		
+    # Repair Cluster resources
+    # From 10.5.0.0 onwards cluster repair needs to be run at the last host upgrade only 
+    # This is taken care in createSD(), hence comment out he line below
+    #${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2cluster -cm -repair -resources" 1> /dev/null 2> /dev/null
+    fi 
+    
+    # note that this may modify the new db2 COPY,  as per PCR068082.
+    handle_gskit_symlink ${DB2IPRDDIR?} 32
+    handle_gskit_symlink ${DB2IPRDDIR?} 64
+
+    trax migr_instance
+}
+
+migr_instance_online()
+{
+    trac migr_instance_online $@
+    set ${setopts?}
+  # T
+  if [ ${ONLINE_PREPARE_SQLLIB_VER} -eq ${FALSE} ]; then    
+    nosd_or_sd_is_first=${FALSE?}
+ 
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ];then
+        old_path=${SD_INSTPROF?}/${INSTNAME?}/${OLDSQLLIBSHARED?}
+        new_path=${SD_INSTPROF?}/${INSTNAME?}/sqllib_shared
+        if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+            nosd_or_sd_is_first=${TRUE?}
+        fi
+        
+    else
+        old_path=${INSTHOME?}/${OLDSQLLIB?}
+        new_path=${INSTHOME?}/sqllib
+        nosd_or_sd_is_first=${TRUE?}
+    fi
+    
+    # If we pass this point, undo all changes if any error occurs
+    UNDOCHG=${TRUE?}
+
+    # Terminate the DLFM instance, if it is one
+    if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+        dmsg "Calling dlfm stop..."
+        ${DB2DIR?}/instance/db2iexec ${INSTNAME?} "dlfm stop"  1> /dev/null 2> /dev/null
+        status=$?
+        dmsg "dlfm stop status: ${status?}"
+
+        if [ ${status?} -ne ${TRUE?} ]; then
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        fi
+
+        # to recreate, we need its current port.
+        get_regvar DLFM_PORT
+        if [ -z "${REGVALUE?}" ]
+        then
+            get_envvar DLFM_PORT
+            if [ -z "${ENVVALUE?}" ]
+            then
+                display_msg ${DB2CAT?} 124 \
+                    'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+                stop_prog 1
+            fi
+            dlfm_port=${ENVVALUE?}
+        else
+            dlfm_port=${REGVALUE?}
+        fi
+
+    fi
+
+    # Is this the DQP instance?
+    DQPINSTANCE=""
+    case ${DB2INSTVER?} in
+        ${DB2VER_V61?})
+            if ${DB2IPRDDIR?}/instance/db2iset -g DQPSERVER > /dev/null 2> /dev/null
+            then
+                DQPINSTANCE=`${DB2IPRDDIR?}/instance/db2iset -g DQPSERVER`
+                if [ ${DQPINSTANCE?} != ${INSTNAME?} ]
+                then
+                    # This isn't the DQP instance, no need to remember it.
+                    DQPINSTANCE=""
+                fi
+            fi
+        ;;
+        ${DB2VER_V81?}|${DB2VER_V71?})
+            query_instuse ${INSTNAME?} DQPSERVER ${FALSE?}
+            if [ ${INSTUSE_VALUE?} -eq ${TRUE?} ]; then
+                DQPINSTANCE=${INSTNAME?}
+            fi
+        ;;
+    esac
+
+    # Check and see if this is an OLAP Server instance
+    query_instuse ${INSTNAME?} OLAPSK ${FALSE?}
+    OLAPInstance=$?
+
+    # If Non-DB2 Data Sources are installed while upgrading DJ, RCon must be installed
+    # in V8; otherwise installation will not procede.
+    dj_env CHECK
+    if [ $? -eq 1 ]; then
+        if [ ! -f ${DB2DIR?}/bin/djxlink ]; then
+            #if [ ! -f ${DB2DIR?}/cfg/db2rcon.lvl ]; then
+            display_msg ${DB2CAT?} 144 'DBI1144E Relational Connect not installed.\n'
+            stop_prog 1
+            #fi
+        fi
+    fi
+
+    # Check if V8 OLAP Starter Kit is installed if needed
+    if [ ${OLAPInstance?} -eq ${TRUE?} ]; then
+        if [ ! -f ${DB2DIR?}/instance/db2olset ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 136 'DBI1136W OLAP Starter Kit not installed.\n'
+        fi
+    fi
+
+    # Check if DB2 Warehouse Manager or Warehouse Manager Connectors is available
+    if [ -f ${INSTHOME?}/sqllib/cfg/db2wmgr_c.lvl -o -f ${INSTHOME?}/sqllib/cfg/db2wm.lvl ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2wmc.lvl -o ! -f ${DB2DIR?}/cfg/db2wm.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 182 'DBI1182W DB2 Warehouse Manager and/or DB2 Warehouse Manager Connectors are not available..\n'
+        fi
+    fi
+
+    # Check if V8 Spatial Extender is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/cfg/db2gse.lvl ]; then
+         if [ ! -f ${DB2DIR?}/gse/coordref.del ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 183 'DBI1183W Spatial Extender not installed.\n'
+        fi
+    fi
+
+    # Check if V8 Life Sciences is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/lib/liblsfile.a ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2lsdc.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 184 'DBI1184W Life Sciences Data Connect not installed.\n'
+        fi
+    fi
+
+    # Check if V8 Query Patroller is installed if needed
+    if [ -f ${INSTHOME?}/sqllib/cfg/dqplevel ]; then
+        if [ ! -f ${DB2DIR?}/cfg/db2qp.lvl ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 138 'DBI1138W Query Patroller not installed. \n'
+        fi
+    fi
+ fi
+    # See if instance is a Server instance and if a V8 Server product is installed
+    server_instance
+    serverInstance=$?
+    server_installed
+    serverInstalled=$?
+
+    rm -f ${TMPFILE2?}
+    # Check if a server version of DB2 v8 is installed if needed
+    if [ ${serverInstance?} -eq ${TRUE?} ]; then
+        if [ ${serverInstalled?} -ne ${TRUE?} ]; then
+            FORCEMIGREQ=${TRUE?}
+            display_msg ${DB2CAT?} 137 'DBI1137W Server Product not installed.\n'
+        fi
+    fi
+
+    # Look into forcing upgrade only if Forcing upgrade is required
+    if [ ${FORCEMIGREQ?} -eq ${TRUE?} ]; then
+        if [ ${FORCEMIGR?} -eq ${FALSE?} ]; then
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        else
+            if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+                 DB2DLNK=${TRUE?}
+            else
+                 DB2DLNK=${FALSE?}
+            fi
+            CFGFILE=""
+            CFGFILETYPE=""
+            prepare_itype
+            display_msg ${DB2CAT?} 140 'DBI1140W Command is being Forced.\n'
+        fi
+    fi
+    
+    # If forcing upgrade is required, push the -F into db2icrt_local
+    if [ ${FORCEMIGR?} -eq ${TRUE?} ]; then
+        ICRTFLAGS="-F ${ICRTFLAGS?}"
+    fi
+
+    if [ "X${INSTTYPE_KEEP_STR?}" != "X" ]; then
+        ICRTFLAGS="-s ${INSTTYPE_KEEP_STR?} ${ICRTFLAGS?}"
+    fi
+
+    # If upgrade debug output is required, push the -d into create scripts
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        ICRTFLAGS="-d ${ICRTFLAGS?}"
+    fi
+    
+    # If instance type is SD and its not the first host , pass -N to db2icrt_local
+    if [  ${INSTTYPE?} -eq ${ITYPE_SD?} -a ${IS_FIRST_HOST?} -ne ${TRUE?} ]; then
+       ICRTFLAGS="-N ${ICRTFLAGS?}"
+    fi
+
+  if [ ${ONLINE_PREPARE_SQLLIB_VER} -eq ${TRUE} ]; then    
+       ICRTFLAGS="-o ${ICRTFLAGS?}"
+  fi
+  if [ ${ONLINE_PREPARE_SQLLIB_VER} -eq ${FALSE} ]; then    
+    # Check if the instance is still running.  If not, we won't continue as
+    # it's not really safe.
+    if [ ${IS_FIRST_HOST?} -eq ${TRUE?} -a ${INSTTYPE?} -ne ${ITYPE_SD?} ]; then
+        tmp_arg=""
+        if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+            tmp_arg="db2iexec"
+        fi 
+        chk_instance_stopped ${INSTNAME?} ${INSTHOME?}/sqllib/bin ${tmp_arg?}
+        status=$?
+    
+        if [ ${status?} -eq ${FALSE?} ]
+        then
+            display_msg ${DB2CAT?} 250 \
+                'DBI1250E Applications are still using instance %s.\n' ${INSTNAME?}
+            display_msg ${DB2CAT?} 124 \
+                'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+            stop_prog 1
+        fi
+    fi
+    
+    # Stop DB2 ACS services
+    db2_acs_stop_disable  ${INSTNAME?} "stop" "${DB2IPRDDIR?}" "${DB2DIR?}/instance/db2iupgrade"
+
+    # Remove icons on Linux platforms
+    if [ "X${OLDSQLLIB?}" = "Xsqllib_v81" -a -x ${DB2IPRDDIR?}/bin/db2rmicons ]; then
+       ${DB2IPRDDIR?}/bin/db2rmicons ${INSTNAME?} 1> /dev/null 2> /dev/null
+    fi
+    
+    #check to see if instance has a token
+    HAS_TOKEN=${FALSE?}
+    ${DB2DIR?}/instance/db2ickts -k ${INSTNAME?} 2> /dev/null 1> /dev/null
+    if [ $? -eq ${TRUE?} ]; then
+        HAS_TOKEN=${TRUE?}
+    fi
+
+    # profile.env gets removed by rm_instlist, this is a hack to preserve it
+    if [ -f ${new_path?}/profile.env ]; then
+        mv ${new_path?}/profile.env ${new_path?}/profile_bak.env
+    fi
+    
+    # Remove instance name from the OLD instance list
+    
+    rm_instlist ${INSTNAME?} ${DB2INSTVER?} ${DB2IPRDDIR?}
+    
+    # rename profile_bak.env to profile.env
+    if [ -f ${new_path?}/profile_bak.env ]; then
+        mv ${new_path?}/profile_bak.env ${new_path?}/profile.env
+    fi
+
+    # If we get this far, backup old sqllib directory and continue upgrade
+    backup_old_sqllib
+
+    # If we get this far, backup old sqllib_shared directory and continue upgrade
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] &&  [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+        backup_old_sqllib_shared
+    fi
+
+    # db2icrt_local etc. no longer work if the previous version has links.
+    if [ -x ${DB2IPRDDIR?}/cfg/db2rmln ]
+    then
+        ${DB2IPRDDIR?}/cfg/db2rmln
+    fi
+
+fi 
+#end of non-prepare
+  if [ ${ONLINE_COMMIT} -eq ${FALSE} ]; then    
+   # db2icrt_local may need to know what we're upgrading from.
+    DB2ICRT_MIGRATIONINSTTYPE=${INSTTYPE?}
+    export DB2ICRT_MIGRATIONINSTTYPE
+
+    # Create an instances for the latest version of DB2
+    if [ ${INSTTYPE?} -eq ${ITYPE_DLN?} ]; then
+        dmsg "${PROGDIR?}/dlfmcrt -p ${dlfm_port?} ${DLFMCRTFLAGS?} ${INSTNAME?}"
+        ${PROGDIR?}/dlfmcrt ${ICRTFLAGS?} -p ${dlfm_port?} ${DLFMCRTFLAGS?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=dlfmcrt
+    elif [ -z "${FENCEDID?}" ]; then       # If fencedID is NOT specified
+        dmsg "${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} ${INSTNAME?}"
+        ${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=db2icrt_local
+    else
+        dmsg "${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} -u ${FENCEDID?} ${INSTNAME?}"
+        ${PROGDIR?}/db2icrt_local ${ICRTFLAGS?} -u ${FENCEDID?} ${INSTNAME?} >&2 > ${TMPFILE2?}
+        rc=$?
+        prog=db2icrt_local
+    fi
+
+    if [ ${rc?} -eq 0 ]; then
+        if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] && [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+            merge_update_file
+        fi
+    fi
+   
+    # If it's upgrading a DQP instance, do the create part here.
+    #if [ ${rc?} -eq 0 -a -n "${DQPINSTANCE?}" ]; then # do not use -n test if uncommented
+    #    :
+    #fi
+
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        dmsg "    **** Start of output from ${prog?} command **** "
+        if [ -s ${TMPFILE2?} ]; then
+            cat ${TMPFILE2?} 2>&1 | tee -a ${DB2INSTLOG?}
+        fi
+        dmsg "    **** End of output from ${prog?} command **** "
+    fi
+
+    dmsg " Return code from ${prog?} = ${rc?} "
+    if [ ${rc?} -ne 0 ] ; then
+        display_msg ${DB2CAT?} 124 \
+            'DBI1124E Instance %s cannot be upgraded.\n' ${INSTNAME?}
+        stop_prog 1
+    fi
+    rm -f ${TMPFILE2?}
+ else
+  #mv ${INSTHOME?}/sqllib_v107 ${INSTHOME?}/sqllib 
+  commit_online
+ fi
+ # end of commit if
+  if [ ${ONLINE_PREPARE_SQLLIB_VER} -ne ${TRUE} ]; then    
+    # If server was an OLAP server instance, enable OLAP functionality
+    if [ ${OLAPInstance?} -eq ${TRUE?} ]; then
+        if [ -f ${DB2DIR?}/instance/db2olset ]; then
+            ${DB2DIR?}/instance/db2olset ${INSTNAME?}
+        fi
+    fi
+    # Create FencedID Info file, if needed
+    create_fencinfo
+
+    # Copy of the database, node, and/or dcs directories
+    copy_db_dirs
+
+    # Copy UDFs
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        copy_UDFs
+    fi
+    
+    # Install/setup user exit program
+    inst_userexit
+    
+    if [ ${HAS_TOKEN?} -eq ${TRUE?} ]; then
+        ${DB2DIR?}/install/db2ls -q | grep TEXT_SEARCH 2> /dev/null 1> /dev/null
+        if [ $? -eq ${TRUE?} ]; then
+            if [ -d ${INSTHOME?}/${OLDSQLLIB?}/db2tss/config ]; then
+                tssHome="${INSTHOME?}/sqllib/db2tss"
+                cp -pr ${INSTHOME?}/${OLDSQLLIB?}/db2tss/config ${tssHome?}
+                ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${tssHome?}/bin/configTool configureParams -configPath ${tssHome?}/config -installPath ${DB2DIR?}/db2tss 2>&1"
+            fi
+        fi
+    fi
+    
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini ]; then
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini \
+                      ${INSTHOME?}/sqllib/cfg/db2cli.ini
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2cli.ini \
+                ${INSTHOME?}/sqllib/cfg/db2cli.ini
+        fi
+    fi 
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -f ${old_path?}/db2nodes.cfg ]; then
+        cp -p ${old_path?}/db2nodes.cfg \
+                      ${new_path?}/db2nodes.cfg
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${old_path?}/db2nodes.cfg \
+                ${new_path?}/db2nodes.cfg
+        fi
+    fi 
+        
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg ]; then
+        cp -p ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg \
+                      ${INSTHOME?}/sqllib/dqpnodes.cfg
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${INSTHOME?}/${OLDSQLLIB?}/dqpnodes.cfg \
+                ${INSTHOME?}/sqllib/dqpnodes.cfg
+        fi
+    fi 
+
+    #restore IBMLDAPSecurity.ini
+    get_envvar DB2LDAPSecurityConfig
+    if [ -z "${ENVVALUE?}" ]; then
+        IBMLDAPSECURITYINIOLDPATH="${INSTHOME?}/${OLDSQLLIB?}/cfg/IBMLDAPSecurity.ini"
+        IBMLDAPSECURITYININEWPATH="${INSTHOME?}/sqllib/cfg/IBMLDAPSecurity.ini"
+    else
+        echo ${ENVVALUE?} | grep "^${INSTHOME?}/sqllib/" 2>/dev/null 1>/dev/null
+        if [ $? -eq 0 ]; then
+            IBMLDAPSECURITYINIOLDPATH=`echo ${ENVVALUE?} | sed 's#'${INSTHOME?}'/sqllib/#'${INSTHOME?}'/'${OLDSQLLIB?}'/#'`
+            IBMLDAPSECURITYININEWPATH=${ENVVALUE?}
+        fi
+    fi
+
+    if [ -f "${IBMLDAPSECURITYINIOLDPATH?}" ]; then
+        cp -p ${IBMLDAPSECURITYINIOLDPATH?} ${IBMLDAPSECURITYININEWPATH?}
+        if [ $? -ne 0 ] ; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                ${IBMLDAPSECURITYINIOLDPATH?} ${IBMLDAPSECURITYININEWPATH?}
+        fi
+    fi
+
+    #upgrade db2audit.cfg
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -f ${old_path?}/security/db2audit.cfg ]; then
+        rm -f ${new_path?}/security/db2audit.cfg 2>&1 1>/dev/null
+        cp -p ${old_path?}/security/db2audit.cfg ${new_path?}/security
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2imaudcfg" 1>/dev/null 2>/dev/null
+        if [ $? -ne 0 ] ; then
+            rm -f ${new_path?}/security/db2audit.cfg 2>&1 1>/dev/null
+            if [ -f ${DB2DIR?}/security64/db2audit.cfg ]; then
+                copyfile ${DB2DIR?}/security64 ${new_path?}/security db2audit.cfg
+            elif [ -f ${DB2DIR?}/security32/db2audit.cfg ]; then
+                copyfile ${DB2DIR?}/security32 ${new_path?}/security db2audit.cfg
+            fi
+            if [ -f ${new_path?}/security/db2audit.cfg ]; then
+                chg_owngrp ${INSTNAME?} ${INSTPGRP?} ${new_path?}/security/db2audit.cfg
+                mkpermission "u=rw,go=r" ${new_path?}/security/db2audit.cfg
+            fi
+        fi
+    fi
+
+    #copy back auditdata
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] && [ -d ${old_path?}/security/auditdata -a -d ${new_path?}/security/auditdata ]; then
+        cp -prf ${old_path?}/security/auditdata ${new_path?}/security 2>&1 1>/dev/null
+    fi
+    
+    # Update instance registry
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        update_registry
+    fi
+
+    # Upgrade all required files/dirs for the instance
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        upgrade_instinfo
+    fi
+
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ] ; then
+        ${DB2DIR?}/instance/db2iset -i ${INSTNAME?} DB2MEMMAXFREE=
+    fi
+
+    # Upgrade Data Joiner environement variables (if they exist)
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        dj_env MIGRATE
+    fi
+
+    # Upgrade any other environment variables, as required
+    migr_environment
+    
+    # Upgrade any registry settings, as required.
+    migr_registry
+
+    # If Relational Connect was present in the previous version, copy settings file
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2dj.ini ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/cfg/db2dj.ini \
+            ${INSTHOME?}/sqllib/cfg/db2dj.ini
+        # If Relational Connect is not present in v8, issue a warning
+        if [ ! -f ${DB2DIR?}/cfg/db2rcon.lvl ]; then
+            display_msg ${DB2CAT?} 143 'DBI1143W Relational Connect not installed.\n'
+        fi
+    fi
+
+    # If upgrading an OLAP instance, copy over the rsm.cfg file if it exists
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/bin/rsm.cfg ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/bin/rsm.cfg \
+            ${INSTHOME?}/sqllib/bin/rsm.cfg
+    fi
+
+    # If Classic Connect was present in the previous version, copy settings file
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/djxclassic2.cfg ]; then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/cfg/djxclassic2.cfg \
+            ${INSTHOME?}/sqllib/cfg/djxclassic2.cfg
+    fi
+
+    # If SSLconfig.ini was in sqllib/cfg, copy it
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/SSLconfig.ini ]; then
+        copyfile ${INSTHOME?}/${OLDSQLLIB?}/cfg ${INSTHOME?}/sqllib/cfg SSLconfig.ini
+    fi
+    
+    # If SSLClientconfig.ini was in sqllib/cfg, copy it
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/cfg/SSLClientconfig.ini ]; then
+        copyfile ${INSTHOME?}/${OLDSQLLIB?}/cfg ${INSTHOME?}/sqllib/cfg SSLClientconfig.ini
+    fi
+    
+    # SSL configuration upgrade
+    ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${INSTHOME?}/sqllib/bin/db2imsslcfg" 2>&1 1>/dev/null
+    
+    # remove SSLconfig if exists
+    if [ -f ${INSTHOME?}/sqllib/cfg/SSLconfig.ini ]; then
+        rm -f ${INSTHOME?}/sqllib/cfg/SSLconfig.ini 2>&1 1>/dev/null
+    fi
+    
+    # remove SSLClientconfig if exists
+    if [ -f ${INSTHOME?}/sqllib/cfg/SSLClientconfig.ini ]; then
+        rm -f ${INSTHOME?}/sqllib/cfg/SSLClientconfig.ini 2>&1 1>/dev/null
+    fi
+
+    # Move any db dir log files to sqllib/db2dump directory
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        clean_migr_logs "SAVE"
+    else
+        clean_migr_logs "REMOVE"
+    fi
+
+    # if old mmm config file, copy it.
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/db2md_config.xml ]
+    then
+        cp ${INSTHOME?}/${OLDSQLLIB?}/db2md_config.xml ${INSTHOME?}/sqllib
+    fi
+
+    # If the original instance is 32-bit, we need to link sqllib/lib to lib32
+    if [ "X${BitWidth_M?}" = "X32" ]; then
+       cd ${INSTHOME?}/sqllib
+       rm -f ${INSTHOME?}/sqllib/lib 2>&1 1>/dev/null
+       ln -s lib32 ${INSTHOME?}/sqllib/lib
+    fi
+
+    # Upgrade DB2 ACS
+    for license_file in ${INSTHOME?}/${OLDSQLLIB?}/acs/${ACS_LIC?} ; do break; done
+    if [ -f ${license_file?} \
+         -a -d ${INSTHOME?}/${OLDSQLLIB?}/acs \
+         -a -d ${INSTHOME?}/sqllib/acs ]; then
+       rm -rf ${INSTHOME?}/sqllib/acs
+    
+       cp -prf ${INSTHOME?}/${OLDSQLLIB?}/acs ${INSTHOME?}/sqllib
+    
+    fi
+
+    if [ ! -f ${license_file?} \
+           -a -d ${INSTHOME?}/${OLDSQLLIB?}/acs \
+           -a -d ${INSTHOME?}/sqllib/acs ]; then
+       cd ${INSTHOME?}/${OLDSQLLIB?}/acs
+       find . -type d | \
+           while read dirname; do
+                 if [ ! -d ${INSTHOME?}/sqllib/acs/${dirname?} ]
+                 then
+                    cp -prf ${INSTHOME?}/${OLDSQLLIB?}/acs/${dirname?} ${INSTHOME?}/sqllib/acs 
+                 fi
+           done
+       find . -type f | \
+           while read filename; do
+                 if [ ! -f ${INSTHOME?}/sqllib/acs/${filename?} ]
+                 then
+                    cp -pf ${INSTHOME?}/${OLDSQLLIB?}/acs/${filename?} ${INSTHOME?}/sqllib/acs/${filename?}
+                 fi
+           done
+    fi
+
+    # copy the old instance.log
+    if [ -f ${INSTHOME?}/${OLDSQLLIB?}/log/instance.log ]; then
+        cp -pf ${INSTHOME?}/${OLDSQLLIB?}/log/instance.log ${INSTHOME?}/sqllib/log
+    else
+        rm -f ${INSTHOME?}/sqllib/log/instance.log
+    fi
+
+    # copy the db2checkSD.log
+    if [ -f ${old_path?}/db2dump/db2checkSD.log ]; then
+        cp -pf ${old_path?}/db2dump/db2checkSD.log ${new_path?}/db2dump
+    fi
+
+    if [ ${nosd_or_sd_is_first?} -eq ${TRUE?} ]; then
+        ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2set -cleanup"
+    fi
+
+    # The below are only specific to PureScale   
+    
+    # copy the db2ha.sys
+    if [ -f ${old_path?}/cfg/db2ha.sys ]; then
+        cp -pf ${old_path?}/cfg/db2ha.sys ${new_path?}/cfg
+        # migrate the db2ha.sys file from pre V10.5 to V10.5 format and store it in db2instanceinfo.reg file
+        if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] ; then  
+           if [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+              ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2hareg -migrate ${new_path?}/cfg/db2ha.sys  ${new_path?}/cfg/db2instanceinfo.reg" 1> /dev/null 2> /dev/null
+              if [ $? -ne 0 ] ; then
+                 display_msg ${DB2CAT?} 86 \
+                     'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                 ${new_path?}/cfg/db2ha.sys \
+                 ${new_path?}/cfg/db2instanceinfo.reg
+              fi
+           fi
+        else
+          ${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2hareg -migrate ${new_path?}/cfg/db2ha.sys ${new_path?}/cfg/db2instanceinfo.reg" 1> /dev/null 2> /dev/null
+          if [ $? -ne 0 ] ; then
+             display_msg ${DB2CAT?} 86 \
+                 'DBI1086E An attempt to copy the file or directory %s to %s failed.\n' \
+                  ${new_path?}/cfg/db2ha.sys \
+                  ${new_path?}/cfg/db2instanceinfo.reg
+          fi
+   
+        fi
+    fi
+   
+    # Set the registry variable DB2RSHCMD and repair cluster
+    if [ ${INSTTYPE?} -eq ${ITYPE_SD?} ] &&  [ ${IS_FIRST_HOST?} -eq ${TRUE?} ]; then
+	
+		${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "db2set DB2RSHCMD=/usr/bin/ssh"
+		
+    # Repair Cluster resources
+    # From 10.5.0.0 onwards cluster repair needs to be run at the last host upgrade only 
+    # This is taken care in createSD(), hence comment out he line below
+    #${DB2DIR?}/instance/db2iexec -n ${INSTNAME?} "${DB2DIR?}/bin/db2cluster -cm -repair -resources" 1> /dev/null 2> /dev/null
+    fi 
+    
+    # note that this may modify the new db2 COPY,  as per PCR068082.
+    handle_gskit_symlink ${DB2IPRDDIR?} 32
+    handle_gskit_symlink ${DB2IPRDDIR?} 64
+fi
+    trax migr_instance_online
+}
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+defaultopts        # Define default values for command-line options
+checkRPATH
+
+if [ "${PROGNAME?}" = "db2imigr" ]; then
+    display_msg ${DB2CAT?} 392 \
+       'DBI1392W The depreciated command will be removed from a future release.  It has been replaced by the db2iupgrade command'
+fi
+
+# Process command-line options
+case $# in
+    0)
+        help ;;
+    *)
+        while getopts :a:u:hdFksbpc optchar; do
+            case ${optchar?} in
+                a)  # Authentication type
+                    AUTHTYPE="${OPTARG?}" ;;
+                u)  # FencedID user name
+                    FENCEDID="${OPTARG?}" ;;
+                d)  # Turn debug mode on
+                    DEBUG=0
+                    setopts="-x" ;;
+                F)  # Force instance upgrade, unsupported
+                    FORCEMIGR=0 ;;
+                k)  # Keep the instance type during update
+                    KEEPITYPE=${TRUE?} ;;
+                s)  # Skip db2ckupgrade check
+                    SKIPDBCHK=${TRUE?} ;;
+                b)  # add db2ckupgrade load pending check option
+                    SKIPLOADPENDINGCHK=${TRUE?} ;;
+                p)  # online upgrade , prepare sqllib_v108
+                    ONLINE_PREPARE_SQLLIB_VER=${TRUE?} ;;
+                c)  # online upgrade , commit 
+                    ONLINE_COMMIT=${TRUE?} ;;
+                ?)  # Display help
+                    cleanup
+                    help ;;
+            esac
+        done
+        shift `expr $OPTIND - 1` # Detele all option args
+        INSTNAME="$1"            # Instance name
+        if [ -z "${INSTNAME?}" ]; then
+            help
+        fi ;;
+esac
+
+set ${setopts?}
+
+# LD_LIBRARY_PATH can cause problems during upgrade - remove it.
+unset LD_LIBRARY_PATH
+
+trap "stop_prog 2" 1 2 3 15
+cleanup                      # Clean up
+
+# Initialize the instance upgrade process
+init_imigrate
+
+# Upgrade DB2 instance
+ if [ ${ONLINE_PREPARE_SQLLIB_VER?} -eq ${FALSE?} -a ${ONLINE_COMMIT?} -eq ${FALSE?} ]; then    
+   migr_instance
+ else
+   migr_instance_online
+ fi
+
+# Successful exit
+stop_prog 0
+

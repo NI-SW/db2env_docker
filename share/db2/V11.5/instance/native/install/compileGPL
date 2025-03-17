@@ -1,0 +1,438 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current Directory
+
+curdir=`/bin/pwd`
+DB2DIR=`dirname $0`
+cd ${DB2DIR?}
+DB2DIR=`/bin/pwd`
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+cd ${curdir?}
+unset curdir
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+
+PROGNAME=`basename $0`       # Program name
+
+#-----------------------------------------------------------------------#
+#               Error Code
+#-----------------------------------------------------------------------#
+# Error Code and Meaning
+# rc=1	Wrong Syntax 
+# rc=2  Make Autoconfig Failed
+# rc=3	Make World Failed
+# rc=4  Make InstallImages Failed
+# rc=5  GPL source directory not found
+# rc=6  Cannot remove log file
+# rc=7  Cannot initialize log file
+# rc=8  Non-Root user
+#-----------------------------------------------------------------------#
+#               Global Variable Definitions
+#-----------------------------------------------------------------------#
+TRUE=0
+FALSE=1
+SUCCESS=0
+GPL_SRC_DIR="/usr/lpp/mmfs/src"
+MK_AUTOCONFIG_FAILED=2
+MK_WORLD_FAILED=3
+MK_INSTALLIMAGES_FAILED=4
+GPL_SRC_DIR_NOT_FOUND=5
+
+LOGFILE="/tmp/compileGPL.log.$$"
+DB2INSTLOG=${LOGFILE?}
+DISPMSGLOG=${DB2INSTLOG?}
+NODISPLAY=${FALSE?}
+MSGCOUNT=0
+
+#-------------------------------------------
+# Function to display message
+#-------------------------------------------
+
+sh_which_ ()
+{
+    set ${setopts?}
+
+    file=$1
+    search_path=$2
+    if [ -z "${search_path?}" ]
+    then
+      search_path="$PATH"
+    fi
+    echo ${search_path?} | sed -e 's/:/\
+/g' | while read path; do
+    if [ -x "${path?}/${file?}" ]
+    then
+        echo "${path?}/${file?}"
+        return 0
+    fi
+    done
+}
+
+sh_which ()
+{
+    set ${setopts?}
+    text=`sh_which_ "$@"`
+    # set return code based on whether there is any output.
+    if [ -z "${text?}" ]
+    then
+        return 1
+    else
+        echo "${text?}"
+        return 0
+    fi
+}
+
+TRUE=0
+FALSE=1
+
+if [ -z "${TRACTRAXLOG}" ]; then
+    _trace_tee ()
+    {
+      cat
+    }
+else
+    _trace_tee ()
+    {
+      tee -a ${TRACTRAXLOG}
+    }
+fi
+
+# To display a message when a function is called
+trac ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Entering: $*" >&2 | _trace_tee
+    fi
+}
+
+# To display a message when exiting a function
+trax()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Exiting: $*"  >&2 | _trace_tee
+    fi
+}
+
+# To display a message when "debug" is set
+dmsg ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## $*"  >&2 | _trace_tee
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - display_msg
+# Function   - Displays a message from the message catalog
+# Parameters - $1 - name of the message catalog
+#            - $2 - message number
+#            - $3 - default message string
+#            - $4,$5,$6 - arguments to substitute in msg string, if needed
+#-----------------------------------------------------------------------
+display_msg()
+{
+    set ${setopts?}
+
+    unset catname msgid deftmsg msgstr warnmsg infomsg
+    catname="$1"
+    msgid=$2
+    deftmsg="$3"
+    warnmsg=${FALSE?}
+    infomsg=${FALSE?}
+
+    echo ${deftmsg?} | grep "DBI....W" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        warnmsg=${TRUE?}
+    fi
+
+    echo ${deftmsg?} | grep "DBI....I" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        infomsg=${TRUE?}
+    fi
+
+    # Do not display message if NODISPLAY is set
+    if [ -z "${NODISPLAY}" ]; then
+        NODISPLAY=${FALSE?}
+    fi
+
+    if [ ${NODISPLAY?} -eq ${TRUE?} ]; then
+        return ${TRUE?}
+    fi
+
+    # Increment the message count only if it is not a warning or information
+    if [ ${warnmsg?} -eq ${FALSE?} -a ${infomsg?} -eq ${FALSE?} ]; then
+
+        # if MSGCOUNT isn't set, we'll just get 1, hence don't use the ? check. 
+        MSGCOUNT=`expr "${MSGCOUNT:-0}" + 1`
+    fi
+
+    shift ; shift ; shift
+
+    disp_msg_file=`sh_which disp_msg \
+         ${DISPMSGDIR:=${DB2DIR}}:${DISPMSGDIR?}/instance:${DISPMSGDIR?}/bin:${DISPMSGDIR?}/..`
+ 
+   sh_which_rc=$?
+ 
+    if [ -z "${DISPMSGLOG}" ]; then
+        dispmsg_tee_cmd="cat"
+    else
+        dispmsg_tee_cmd="tee -a ${DISPMSGLOG}"
+    fi
+
+    if [ ${sh_which_rc?} -eq 0 ]; then
+        ${disp_msg_file?} 1 ${msgid} ${catname} "${deftmsg}" "$@" 2>&1 | ${dispmsg_tee_cmd?}
+    else
+        echo "disp_msg does not exist"
+    fi
+
+}
+
+#-------------------------------------------
+# Function to set lang depending on locale
+#-------------------------------------------
+
+set_lang_internal ()
+{
+    set ${setopts?}
+    bindir="$1"
+    msgdir="$2"
+    lang="$3"
+
+    CMD_DB2LANGDIR="${bindir?}/db2langdir"
+
+    if [ "X$lang" != "X" ]; then
+       LANG_CUSTOM=0
+    else
+       LANG_CUSTOM=1
+    fi
+    # Default locale name and locale-specific message directory
+    
+    LANG=${LANG:-C}
+    locname=${LANG?}
+    
+    if [ ${LANG_CUSTOM?} -eq 0 ]; then
+       locname=`${CMD_DB2LANGDIR?} ${lang?} -locale`
+       DB2_LANG_JAVA=${locname?}
+    fi
+
+    langdir=`${CMD_DB2LANGDIR?} ${locname?}`
+    clangdir=`${CMD_DB2LANGDIR?} C`
+
+    if [ -f ${msgdir?}/${langdir?}/db2install.cat -a -f ${msgdir?}/${langdir?}/db2istring.cat ]; then
+        DB2CAT="${msgdir?}/${langdir?}/db2install.cat"
+        DB2ISTR="${msgdir?}/${langdir?}/db2istring.cat"
+        LANGUAGEDIR=${langdir?}
+    elif [ -f ${msgdir?}/${clangdir?}/db2install.cat -a -f ${msgdir?}/${clangdir?}/db2istring.cat ]; then
+        DB2CAT="${msgdir?}/${clangdir?}/db2install.cat"
+        DB2ISTR="${msgdir?}/${clangdir?}/db2istring.cat"
+        LANGUAGEDIR=${clangdir?}
+    else
+        echo "DBI1055E The message file cannot be found."
+        echo
+        echo "Explanation:  The message file required by this"
+        echo "script is missing from the system; it may have been"
+        echo "deleted or the database products may have been loaded"
+        echo "incorrectly."
+        echo
+        echo "User Response:  Verify that the product option containing"
+        echo "the message file is installed correctly.  If there are"
+        echo "verification errors; reinstall the product option."
+        exit 67
+    fi
+
+    # check if the locale exists.  If not, we'll set LANG to C for any
+    # subprocesses.
+    locale -a 2> /dev/null | grep '^'${locname?}'$' > /dev/null
+    if [ $? -ne 0 ]
+    then
+        locname=C
+    fi
+
+    # if a language was passed in, set LANG - but if not, leave it alone.
+    # (if it isn't a valid language, well, try resetting anyway)
+    if [ ${LANG_CUSTOM?} -eq 0 ]
+    then
+        locale -a 2> /dev/null | grep '^'${LANG:-C}'$' > /dev/null
+        if [ $? -eq 0 ]; then
+            LANG=${locname?}
+        else 
+            # if locname is valid, set LANG to locname
+            locale -a 2> /dev/null | grep '^'${locname:-C}'$' > /dev/null
+            if [ $? -eq 0 ]; then
+                LANG=${locname?}
+            fi
+        fi
+    fi
+
+    # Set LANG and NLSPATH variables for use by dspmsg command
+    NLSPATH="${msgdir?}/%L/%N:${msgdir?}/${clangdir?}/%N"
+    SHORTLANG=`${CMD_DB2LANGDIR?} ${LANG:-C} -short`
+
+    export LANG NLSPATH
+}
+
+BINDIR=${PROGDIR?}/../bin
+INSTALLDIR=${PROGDIR?}/../install
+
+# backup old libpath and set new libpath
+
+    LD_LIBRARY_PATH_ORG=${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=.:${INSTALLDIR?}:${LD_LIBRARY_PATH}
+    export LD_LIBRARY_PATH
+
+if [ ! -f ${BINDIR?}/db2langdir ]; then
+   BINDIR="${PROGDIR?}/../../../bin"
+   if [ ! -f ${BINDIR?}/db2langdir ]; then
+      display_msg ${DB2CAT?} 321 "db2langdir is missing"
+   fi
+fi
+
+if [ ! -d ${INSTALLDIR?}/locale ]; then
+   INSTALLDIR="${PROGDIR?}/../../instance/native/install"
+   if [ ! -d ${INSTALLDIR?}/locale ]; then
+      display_msg ${DB2CAT?} 321 "locale dir is missing"
+   fi
+fi
+
+set_lang_internal ${BINDIR?} ${INSTALLDIR?}/locale
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+#-------------------------------------------
+# To display the command syntax
+#-------------------------------------------
+syntax ()
+{
+    display_msg ${DB2CAT?} 6000 'compileGPL [-h|-?] [-d] [-l logFile]\n'
+    exit 1
+}
+
+#-------------------------------------------
+# Default values for command line options
+#-------------------------------------------
+defaultopts()
+{
+    DEBUG=1               # Debug mode is FALSE
+    setopts="+x"          # Default - setopts is not on
+    compile_rc=99
+}
+
+#-------------------------------------------
+# Check if root is running the prog
+#-------------------------------------------
+chk_root ()
+{
+    trac chk_root $@
+    set ${setopts?}
+
+    if [ `id -u` -ne 0 ]; then
+        display_msg ${DB2CAT?} 52 'DBI1052E: You must be root to perform this operation.\n'
+        exit 8
+    fi
+
+    trax chk_root
+}
+
+#-------------------------------------------
+# Compile GPL function
+#-------------------------------------------
+compile_GPL()
+{
+    trac compile_GPL $@
+    if [ -d ${GPL_SRC_DIR?} ]; then
+        cd ${GPL_SRC_DIR?}
+        make Autoconfig >> ${LOGFILE?}
+        if [ $? -eq ${SUCCESS?} ]; then
+            make World >> ${LOGFILE?}
+            if [ $? -eq ${SUCCESS?} ]; then
+                make InstallImages >> ${LOGFILE?}
+                if [ $? -ne ${SUCCESS?} ]; then
+                    return ${MK_INSTALLIMAGES_FAILED?}
+                else
+                    return ${SUCCESS?}
+                fi
+            else
+                return ${MK_WORLD_FAILED?}
+            fi
+        else
+            return ${MK_AUTOCONFIG_FAILED?}
+        fi
+    else
+        display_msg ${DB2CAT?} 97 \
+            'DBI1097E The file or directory %s does not exist.\n' ${GPL_SRC_DIR?}
+        return ${GPL_SRC_DIR_NOT_FOUND?}
+    fi
+    trax compile_GPL
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+defaultopts        # Define default values for command-line options
+
+# Process command-line options
+while getopts :l:hd optchar; do
+    case ${optchar?} in
+        l)  # Specify log file
+            LOGFILE="${OPTARG?}"
+            ;;
+        d)  # Turn debug mode on
+              DEBUG=0
+              setopts="-x" ;;
+        ?|h)  # Display help
+              syntax ;;
+    esac
+done
+shift `expr $OPTIND - 1` # Detele all option args
+
+set ${setopts?}
+
+chk_root           # Ensure root user is running install
+
+if [ -f ${LOGFILE?} ]; then
+    rm -f ${LOGFILE?} > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        display_msg ${DB2CAT?} 83 "An attempt to remove %s failed.\n" ${LOGFILE?}
+        exit 6
+    fi
+fi
+
+compile_GPL
+compile_rc=$?
+if [ ${compile_rc?} -eq ${SUCCESS?} ]; then
+    display_msg ${DB2CAT?} 70 'DBI1070I: Program %s completed successfully.\n' ${PROGNAME?}
+else
+    display_msg ${DB2CAT?} 65 'DBI1065E: Program %s terminated prematurely.\n' ${PROGNAME?}
+    display_msg ${DB2CAT?} 79 'DBI1079I: Output is saved in the log file %s.' ${DB2INSTLOG?}
+fi
+
+exit ${compile_rc?}

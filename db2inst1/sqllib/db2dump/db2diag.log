@@ -1,0 +1,154 @@
+
+2024-07-31-03.29.13.170618+000 I1E1834               LEVEL: Event
+PID     : 3488                 TID : 139910950318336 PROC : db2flacc
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 890dfb5c2ba0
+FUNCTION: DB2 UDB, RAS/PD component, pdLogInternal, probe:120
+START   : New Diagnostic Log file
+DATA #1 : Build Level, 248 bytes
+Instance "db2inst1" uses "64" bits and DB2 code release "SQL11050"
+with level identifier "0601010F".
+Informational tokens are "DB2 v11.5.0.0", "s1906101300", "DYN1906101300AMD64", Fix Pack "0".
+DATA #2 : System Info, 664 bytes
+System: Linux 890dfb5c2ba0 14 5 x86_64
+CPU: total:6 online:6 Cores per socket:3 Threading degree per core:2 SIMD:Y CPU Features:SSE2,SSSE3,SSE4,AVX2
+CPU binding: not in use
+Physical Memory(MB): total:7685 free:254
+Virtual  Memory(MB): total:15757 free:6292
+Swap     Memory(MB): total:8072 free:6038
+Kernel   Params: msgMaxMessageSize:8192 msgMsgMap:16384 msgMaxQueueIDs:32000
+                 msgNumberOfHeaders:16384 msgMaxQueueSize:16384
+                 msgMaxSegmentSize:16 shmMax:9223372036854775807 shmMin:1
+                 shmIDs:4096 shmSegments:4096 semMap:1024000000 semIDs:32000
+                 semNum:1024000000 semUndo:1024000000 semNumPerID:32000
+                 semOps:500 semUndoSize:20 semMaxVal:32767
+                 semAdjustOnExit:32767
+Cur cpu time limit (seconds)  = 0xFFFFFFFFFFFFFFFF
+Cur file size limit (bytes) = 0xFFFFFFFFFFFFFFFF
+Cur data size (bytes)  = 0xFFFFFFFFFFFFFFFF
+Cur stack size (bytes)  = 0x0000000000800000
+Cur core size (bytes)  = 0xFFFFFFFFFFFFFFFF
+Cur memory size (bytes) = 0xFFFFFFFFFFFFFFFF
+nofiles (descriptors)  = 0x0000000000100000
+Cur maximum number of processes = 0x0000000000400000
+Disk: 4K Device Support: NONE
+
+Information in this record is only valid at the time when this file was
+created (see this record's time stamp)
+
+2024-07-31-03.29.13.172427+000 I1836E327             LEVEL: Event
+PID     : 3488                 TID : 139910950318336 PROC : db2flacc
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 890dfb5c2ba0
+FUNCTION: DB2 UDB, config/install, sqlfLogUpdateCfgParam, probe:30
+CHANGE  : CFG DBM: "Sysadm_group" From: ""  To: "db2inst1" 
+
+2024-07-31-03.29.14.218822+000 I2164E404             LEVEL: Event
+PID     : 3497                 TID : 140665952293120 PROC : db2flacc
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 890dfb5c2ba0
+FUNCTION: DB2 UDB, config/install, sqlfLogUpdateCfgParam, probe:30
+CHANGE  : CFG DBM: "JDK_path" From: "/view/db2_v115_linuxamd64_s1906101300/vbs/INST/java/jdk64"  To: "/home/db2inst1/sqllib/java/jdk64" 
+
+2024-07-31-03.29.14.250343+000 I2569E325             LEVEL: Event
+PID     : 3499                 TID : 140564773900544 PROC : db2flacc
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 890dfb5c2ba0
+FUNCTION: DB2 UDB, config/install, sqlfLogUpdateCfgParam, probe:30
+CHANGE  : CFG DBM: "Discover_comm" From: ""  To: "TCPIP" 
+
+2024-07-31-06.57.18.012797+000 I2895E313             LEVEL: Event
+PID     : 624                  TID : 140660500703104 PROC : db2set
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, oper system services, db2set_main, probe:40
+CHANGE  : CFG DB2SET: DB2COMM: From: "" To: "TCPIP"
+
+2024-07-31-06.57.27.576887+000 I3209E315             LEVEL: Event
+PID     : 626                  TID : 139887237912448 PROC : db2set
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, oper system services, db2set_main, probe:40
+CHANGE  : CFG DB2SET: DB2CODEPAGE: From: "" To: "819"
+
+2024-07-31-06.57.51.190895+000 I3525E367             LEVEL: Warning
+PID     : 620                  TID : 139732351866752 PROC : db2bp
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, common communication, sqlcctcplogIPAddress, probe:50
+MESSAGE : DIA3220W Client sent data from IP address = "10.1.111.22", port = 
+          "20675".
+
+2024-07-31-06.58.12.170319+000 I3893E367             LEVEL: Warning
+PID     : 741                  TID : 140109430441856 PROC : db2bp
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, common communication, sqlcctcplogIPAddress, probe:50
+MESSAGE : DIA3220W Client sent data from IP address = "10.1.111.22", port = 
+          "20675".
+
+2024-07-31-07.29.50.540451+000 I4261E1196            LEVEL: Event
+PID     : 883                  TID : 140193915998464 PROC : db2flacc
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, bsu security, sqlex_db2flacc_main, probe:1642
+DATA #1 : String, 32 bytes
+db2flacc request to be executed:
+DATA #2 : signed integer, 4 bytes
+7
+DATA #3 : String, 24 bytes
+Execution path followed:
+DATA #4 : Codepath, 8 bytes
+21
+DATA #5 : String, 30 bytes
+Return code followed by sqlca:
+DATA #6 : signed integer, 4 bytes
+0
+DATA #7 : SQLCA, PD_DB2_TYPE_SQLCA, 136 bytes
+ sqlcaid : SQLCA     sqlcabc: 136   sqlcode: -1021   sqlerrml: 5
+ sqlerrmc: gbkdb
+ sqlerrp : SQLEUNCN
+ sqlerrd : (1) 0x003E8200      (2) 0x00000000      (3) 0x00000000
+           (4) 0x00000000      (5) 0x00000000      (6) 0x00000000
+ sqlwarn : (1)      (2)      (3)      (4)        (5)       (6)    
+           (7)      (8)      (9)      (10)        (11)     
+ sqlstate:      
+CALLSTCK: (Static functions may not be resolved correctly, as they are resolved to the nearest symbol)
+  [0] 0x0000000000402EF1 main + 0x201
+  [1] 0x00007F816C537B17 __libc_start_main + 0xE7
+  [2] 0x0000000000402C29 db2flacc + 0x2C29
+
+2024-07-31-07.29.50.541467+000 I5458E1601            LEVEL: Event
+PID     : 882                  TID : 139982121431168 PROC : db2
+INSTANCE: db2inst1             NODE : 000
+HOSTNAME: 2cad54da72d2
+FUNCTION: DB2 UDB, bsu security, sqlex_db2flacc_process, probe:0
+DATA #1 : String, 61 bytes
+db2flacc process hit an error. Return code followed by sqlca:
+DATA #2 : signed integer, 4 bytes
+0
+DATA #3 : SQLCA, PD_DB2_TYPE_SQLCA, 136 bytes
+ sqlcaid : SQLCA     sqlcabc: 136   sqlcode: -1021   sqlerrml: 5
+ sqlerrmc: gbkdb
+ sqlerrp : SQLEUNCN
+ sqlerrd : (1) 0x003E8200      (2) 0x00000000      (3) 0x00000000
+           (4) 0x00000000      (5) 0x00000000      (6) 0x00000000
+ sqlwarn : (1)      (2)      (3)      (4)        (5)       (6)    
+           (7)      (8)      (9)      (10)        (11)     
+ sqlstate:      
+DATA #4 : String, 31 bytes
+EXIT code for db2flacc process:
+DATA #5 : signed integer, 4 bytes
+0
+CALLSTCK: (Static functions may not be resolved correctly, as they are resolved to the nearest symbol)
+  [0] 0x00007F501E189455 _Z22sqlex_db2flacc_processiP21SQLEX_FLACC_REQUEST_TP19SQLEX_FLACC_REPLY_T + 0x725
+  [1] 0x00007F501E18BE39 _Z20sqlex_uncatalog_nodePcP5sqlca + 0x1A9
+  [2] 0x00007F501E00F4F2 sqleuncn_api + 0x92
+  [3] 0x00007F501DAA0AE6 _Z16clp_exe_sqleuncnv + 0x46
+  [4] 0x00007F501DAB5723 _Z10clp_execmdv + 0x2B3
+  [5] 0x00007F501DAB314D _Z11clp_execinpii + 0x110D
+  [6] 0x00007F501DAB1B3B _Z10clp_fp_coniiPPc + 0x32B
+  [7] 0x00007F501DAB16A6 clp_api + 0x106
+  [8] 0x00000000004013EE main + 0x5E
+  [9] 0x00007F501C537B17 __libc_start_main + 0xE7
+  [10] 0x00000000004012C9 db2 + 0x12C9

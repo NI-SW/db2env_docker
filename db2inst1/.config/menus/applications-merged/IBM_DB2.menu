@@ -1,0 +1,11 @@
+<Menu>
+	<Name>Applications</Name>
+	  <Menu>
+	    <Name>IBM_DB2_MainMergeMenu</Name>
+	    <Directory>IBM_DB2.directory</Directory>
+	    <Include>
+	      <Category>IBM</Category>
+	      <Category>DB2</Category>
+	    </Include>
+	  </Menu>
+</Menu>

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Command Line Processor Plus
+Type=Application
+Exec=/opt/ibm/db2/V11.5/bin/db2desktop clpplus
+URL=
+Icon=/home/db2inst1/.local/share/icons/clpplus.xpm
+Version=1.0
+Terminal=true
+NoDisplay=false
+Hidden=false
+MimeType=
+Categories=DB2;
+StartupNotify=false
+ReadOnly=false

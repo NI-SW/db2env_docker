@@ -1,0 +1,3750 @@
+#-----------------------------------------------------------------------"
+# (C) COPYRIGHT International Business Machines Corp. 1996, 1998
+# All Rights Reserved
+# Licensed Materials - Property of IBM
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+# NAME: db2inst.rcx
+#
+# FUNCTION: db2inst.rcx - resource file for the Unix DB2 Setup Utility
+#
+# RULES:
+# 
+#   o each line of help should contain at most 60 characters.
+#   o keep line breaks and indentations.
+#   o do not break any line nor join lines together.
+#   o make sure there are two spaces between two full sentences.
+#   o MSP_T_L_N must not exceed 64 characters per line and up to two lines.
+#   o MSP_I_L_A_D, MSP_T_L_A_D, MSP_D_L_A_D, and MSPU_L_A_D must not
+#     exceed 64 characters per line and up to 2 lines. If the translation
+#     cannot be shortened to less than 128 characters, then remove the word
+#     'Home Directory'.
+#
+#-----------------------------------------------------------------------"
+L_OK
+"OK"
+
+L_HELP
+"Help"
+
+L_CANCEL
+"Cancel"
+
+L_YES
+"Yes"
+
+L_NO
+"No"
+
+L_CLOSE
+" Close "
+
+L_INSTALL
+"Install..."
+
+L_CREATE
+"Create..."
+
+L_SETUP
+"Setup..."
+
+L_CUSTOMIZE
+"Customize..."
+
+L_PROPERTIES
+"Properties..."
+
+L_DEFAULT
+"Default"
+
+L_DETECTED
+"Detected"
+
+L_CONTINUE
+"Continue"
+
+L_ERROR
+"Error"
+
+L_WARNING
+"Warning"
+
+L_NOTICE
+"Notice"
+
+L_EXECUTE
+"Please Wait..."
+
+L_EXECUTE_INSTALLING
+"Installing..."
+
+L_EXECUTE_DEINSTALLING
+"Removing..."
+
+L_EXECUTE_CONFIGURING
+"Configuring..."
+
+L_EXECUTE_DECONFIGURING
+"De-configuring..."
+
+L_EXECUTE_CONFIRM
+"
+(X) This is your last chance to stop.
+
+    Select OK to start, or Cancel to abort.
+"
+
+L_SNA_WARNING
+"
+SNA Communications Support has been selected for
+installation, but the installed %s fileset
+level is below %s.
+To use SNA with DB2 Version 7 or greater, you
+require %s levels %s or greater.
+"
+
+M_EXECUTE_B_CANCEL
+"
+(X) Are you sure you want to terminate the install process?
+    Select OK to terminate install.
+"
+
+L_WAIT
+"Please Wait"
+
+L_SELECT
+"Select All"
+
+L_DESELECT
+"Deselect All"
+
+L_REQUIRED
+"Required:"
+
+L_OPTIONAL
+"Optional:"
+
+L_NONE
+"None"
+
+L_MORE
+" [ More... ]"
+
+L_SCAN_SYSTEM
+"
+Scanning your system for information...
+"
+
+L_CLEANUP_SYSTEM
+"
+Performing clean up on your system...
+"
+
+L_TERMINATE
+"
+(!) DB2 has been removed from your system.
+    Select OK to terminate DB2 Setup Utility.
+"
+
+L_REJECT
+"
+(X) Continuing will discard all your current selections.
+    Select OK to confirm.
+"
+
+L_NOT_NULL
+"
+(X) %s must have a value.
+"
+
+L_PACKAGE_MISSING
+"
+One of the following packages needs to be installed/selected:
+"
+
+P_CAE
+"DB2 Client"
+
+P_ODBC
+"Open Database Connectivity (ODBC)"
+
+P_DB2CONVUCS
+"Code Page Conversion Support - Uni Code Support"
+
+P_JRE
+"JRE"
+
+P_JDBC
+"Java Support"
+
+P_DB2CJ
+"Common Jar Files"
+
+P_DB2TSPF
+"Transformer Stored Procedure Files"
+
+P_DB2TRANS
+"Warehouse Transformers"
+
+P_DB2RTE
+"DB2 Run-time Environment"
+
+P_DB2ENGN
+"DB2 Engine"
+
+P_CSRTE
+"DB2 Communication Support - TCP/IP"
+
+P_CSSNA
+"DB2 Communication Support - SNA"
+
+P_CSDRDA
+"DB2 Communication Support - DRDA Application Server"
+
+P_CSIPX
+"DB2 Communication Support - IPX/SPX"
+
+P_DB2REPL
+"Replication"
+
+P_DB2WCC
+"Control Center"
+
+P_DB2CTLSRV
+"DB2 Control Server"
+
+P_DB2DAS
+"Administration Server"
+
+P_DB2SAMPL
+"DB2 Sample Database Source"
+
+P_DB2MPP
+"DB2 Parallel Extension"
+
+P_DB2CONVJP
+"Code Page Conversion Support - Japanese"
+
+P_DB2CONVKR
+"Code Page Conversion Support - Korean"
+
+P_DB2CONVCN
+"Code Page Conversion Support - Simplified Chinese"
+
+P_DB2CONVTW
+"Code Page Conversion Support - Traditional Chinese"
+
+P_DB2DFSC
+"DFS Client Enabler"
+
+P_DB2CDB
+"Local Warehouse Control Database"
+
+P_DB2DWA
+"Warehouse Agent"
+
+P_DB2DJ
+"Distributed Join for DB2 Data Sources"
+
+P_DB2DJO
+"Distributed Join for Oracle Data sources"
+
+P_DB2ICW
+"Information Catalog for the Web"
+
+P_DB2GS
+"Getting Started"
+
+P_DB2ISV
+"ISV Toolkit"
+
+P_DB2LDAP
+"Light-weight Directory Access Protocol"
+
+P_DB2SPB
+"Stored Procedure Builder"
+
+P_PE
+"Product Signature for DB2 UDB Personal Edition"
+
+P_CPE
+"Product Signature for DB2 Connect Personal Edition"
+
+P_WSRV
+"Product Signature for DB2 UDB Workgroup Edition"
+
+P_DDCS
+"DB2 Connect Support"
+
+P_DB2DLNK
+"DB2 Data Links Manager Support"
+
+P_DB2QPC
+"DB2 Query Patroller Client"
+
+P_DB2QPA
+"DB2 Query Patroller Agent"
+
+P_DB2QPS
+"DB2 Query Patroller Server"
+
+P_ESRV
+"Product Signature for DB2 UDB Enterprise Edition"
+
+P_DM
+"Product Signature for DB2 Warehouse Manager"
+
+P_RC
+"Product Signature for DB2 Relational Connect"
+
+P_DDMU
+"Product Signature for DB2 Connect Enterprise Edition"
+
+P_MPP
+"Product Signature for DB2 UDB Enterprise - Extended Edition"
+
+P_DSRV
+"Product Signature for DB2 Data Links Manager"
+
+P_DB2ADT
+"DB2 Application Development Tools (ADT)"
+
+P_DB2ADTSP
+"DB2 Sample Applications"
+
+P_DB2SPEXC
+"Spatial Extender Client Support"
+
+P_DB2ARC
+"ArcExplorer"
+
+P_SPEXS
+"Product Signature for DB2 Spatial Extender"
+
+P_DB2SPEXS
+"Spatial Extender Server Library"
+
+P_DB2GEC
+"GeoCoder Reference Data"
+
+P_OLAPSK
+"OLAP Starter Kit"
+
+P_OLAPGS
+"Getting Started"
+
+OLAP_D
+"OLAP Instance Setup"
+
+OLAP_L_LABEL
+"OLAP Instance"
+
+OLAP_L_SETUP
+"Set up as OLAP Instance"
+
+OLAP_L_SETUP_NO
+"Do not set up as OLAP Instance"
+
+P_MSGEN
+"DB2 Product Messages -- English"
+
+P_MSGENI
+"DB2 Product Messages -- English (ISO)"
+
+P_MSGDE
+"DB2 Product Messages -- German"
+
+P_MSGDEI
+"DB2 Product Messages -- German (ISO)"
+
+P_MSGES
+"DB2 Product Messages -- Spanish"
+
+P_MSGESI
+"DB2 Product Messages -- Spanish (ISO)"
+
+P_MSGIT
+"DB2 Product Messages -- Italian"
+
+P_MSGITI
+"DB2 Product Messages -- Italian (ISO)"
+
+P_MSGFR
+"DB2 Product Messages -- French"
+
+P_MSGFRI
+"DB2 Product Messages -- French (ISO)"
+
+P_MSGDA
+"DB2 Product Messages -- Danish"
+
+P_MSGDAI
+"DB2 Product Messages -- Danish (ISO)"
+
+P_MSGFI
+"DB2 Product Messages -- Finnish"
+
+P_MSGFII
+"DB2 Product Messages -- Finnish (ISO)"
+
+P_MSGNO
+"DB2 Product Messages -- Norwegian"
+
+P_MSGNOI
+"DB2 Product Messages -- Norwegian (ISO)"
+
+P_MSGSV
+"DB2 Product Messages -- Swedish"
+
+P_MSGSVI
+"DB2 Product Messages -- Swedish (ISO)"
+
+P_MSGCS
+"DB2 Product Messages -- Czech"
+
+P_MSGHU
+"DB2 Product Messages -- Hungarian"
+
+P_MSGTR
+"DB2 Product Messages -- Turkish"
+
+P_MSGPL
+"DB2 Product Messages -- Polish"
+
+P_MSGRU
+"DB2 Product Messages -- Russian"
+
+P_MSGBG
+"DB2 Product Messages -- Bulgarian"
+
+P_MSGSL
+"DB2 Product Messages -- Slovenian"
+
+P_MSGJA
+"DB2 Product Messages -- Japanese"
+
+P_MSGJAE
+"DB2 Product Messages -- Japanese (EUC)"
+
+P_MSGKO
+"DB2 Product Messages -- Korean"
+
+P_MSGPT
+"DB2 Product Messages -- Brazilian Portuguese"
+
+P_MSGCN
+"DB2 Product Messages -- Simplified Chinese"
+
+P_MSGTW
+"DB2 Product Messages -- Traditional Chinese"
+
+P_MSGTWE
+"DB2 Product Messages -- Traditional Chinese (EUC)"
+
+P_MSGNL
+"DB2 Product Messages -- Dutch"
+
+P_MSGNLI
+"DB2 Product Messages -- Dutch (ISO)"
+
+P_DOCWHEN
+"Control Center (HTML) -- English"
+
+P_DOCWHDE
+"Control Center (HTML) -- German"
+
+P_DOCWHES
+"Control Center (HTML) -- Spanish"
+
+P_DOCWHFR
+"Control Center (HTML) -- French"
+
+P_DOCWHIT
+"Control Center (HTML) -- Italian"
+
+P_DOCWHDA
+"Control Center (HTML) -- Danish"
+
+P_DOCWHFI
+"Control Center (HTML) -- Finnish"
+
+P_DOCWHNO
+"Control Center (HTML) -- Norwegian"
+
+P_DOCWHSV
+"Control Center (HTML) -- Swedish"
+
+P_DOCWHCS
+"Control Center (HTML) -- Czech"
+
+P_DOCWHHU
+"Control Center (HTML) -- Hungarian"
+
+P_DOCWHTR
+"Control Center (HTML) -- Turkish"
+
+P_DOCWHPL
+"Control Center (HTML) -- Polish"
+
+P_DOCWHRU
+"Control Center (HTML) -- Russian"
+
+P_DOCWHBG
+"Control Center (HTML) -- Bulgarian"
+
+P_DOCWHSL
+"Control Center (HTML) -- Slovenian"
+
+P_DOCWHPT
+"Control Center (HTML) -- Brazilian Portuguese"
+
+P_DOCWHJA
+"Control Center (HTML) -- Japanese"
+
+P_DOCWHKO
+"Control Center (HTML) -- Korean"
+
+P_DOCWHCN
+"Control Center (HTML) -- Simplified Chinese"
+
+P_DOCWHTW
+"Control Center (HTML) -- Traditional Chinese"
+
+P_DOCHTEN
+"DB2 Product Library (HTML) -- English"
+
+P_DOCHTDE
+"DB2 Product Library (HTML) -- German"
+
+P_DOCHTES
+"DB2 Product Library (HTML) -- Spanish"
+
+P_DOCHTFR
+"DB2 Product Library (HTML) -- French"
+
+P_DOCHTIT
+"DB2 Product Library (HTML) -- Italian"
+
+P_DOCHTDA
+"DB2 Product Library (HTML) -- Danish"
+
+P_DOCHTFI
+"DB2 Product Library (HTML) -- Finnish"
+
+P_DOCHTNO
+"DB2 Product Library (HTML) -- Norwegian"
+
+P_DOCHTSV
+"DB2 Product Library (HTML) -- Swedish"
+
+P_DOCHTCS
+"DB2 Product Library (HTML) -- Czech"
+
+P_DOCHTHU
+"DB2 Product Library (HTML) -- Hungarian"
+
+P_DOCHTTR
+"DB2 Product Library (HTML) -- Turkish"
+
+P_DOCHTPL
+"DB2 Product Library (HTML) -- Polish"
+
+P_DOCHTRU
+"DB2 Product Library (HTML) -- Russian"
+
+P_DOCHTBG
+"DB2 Product Library (HTML) -- Bulgarian"
+
+P_DOCHTSL
+"DB2 Product Library (HTML) -- Slovenian"
+
+P_DOCHTJA
+"DB2 Product Library (HTML) -- Japanese"
+
+P_DOCHTKO
+"DB2 Product Library (HTML) -- Korean"
+
+P_DOCHTPT
+"DB2 Product Library (HTML) -- Brazilian Portuguese"
+
+P_DOCHTCN
+"DB2 Product Library (HTML) -- Simplified Chinese"
+
+P_DOCHTTW
+"DB2 Product Library (HTML) -- Traditional Chinese"
+
+P_DOCHTNL
+"DB2 Product Library (HTML) -- Dutch"
+
+P_NETQ
+"Net Question"
+
+HELP_W
+"DB2 Setup Utility Online Help"
+
+HELP_HELP_T
+"General Usage"
+
+SUMMARY_W
+"DB2 Setup Utility"
+
+SUMMARY_T
+"Summary Report"
+
+L_SUMMARY_INSTALL
+"
+Installation
+------------
+"
+
+L_SUMMARY_TO_BE_INSTALLED
+"
+Product components to be installed:
+
+"
+
+L_SUMMARY_TO_BE_REMOVED
+"
+Product components to be removed:
+
+"
+
+L_SUMMARY_LN
+"Links for DB2 Libraries"
+
+L_SUMMARY_INSTANCE
+"DB2 Instance Creation"
+
+L_SUMMARY_INSTANCE_D
+"Create DB2 Instance, %s"
+
+L_SUMMARY_INSTANCE_D_A
+"Authentication type is %s"
+
+L_SUMMARY_TOOL
+"Administration Server Creation"
+
+L_SUMMARY_TOOL_D
+"Create Administration Server, %s"
+
+L_SUMMARY_DATALINK
+"DB2 Data Links Manager Administrator Creation"
+
+L_SUMMARY_DATALINK_D
+"Create DB2 Data Links Manager Administrator, %s"
+
+L_SUMMARY_DATALINK_BACKUP_DIR_D
+"Set up DLFM backup directory, %s"
+
+L_SUMMARY_SAMPLE
+"DB2 Sample Database"
+
+L_SUMMARY_AUTO
+"Auto start DB2 Instance"
+
+L_SUMMARY_LN_TO_BE_CREATED
+"Create DB2 Libraries links"
+
+L_SUMMARY_LN_TO_BE_DROPPED
+"Remove DB2 Libraries links"
+
+L_SUMMARY_SAMPLE_TO_BE_CREATED
+"Create sample database"
+
+L_SUMMARY_AUTO_TO_BE_CONFIGURED
+"Auto start DB2 Instance"
+
+L_SUMMARY_DBM_TCP
+"Update DBM configuration file for TCP/IP"
+
+L_SUMMARY_DBM_IPX
+"Update DBM configuration file for IPX/SPX"
+
+L_SUMMARY_DATALINK_SETUP
+"Setup DB2 Data Links Manager Administrator"
+
+L_SUMMARY_DATALINK_JFS
+"Setup JFS Support"
+
+L_SUMMARY_DATALINK_DFSS
+"Setup DFS Server Support"
+
+L_SUMMARY_DATALINK_DFSS_CONF
+"Configure Data Links instance - DFS Server"
+
+L_SUMMARY_DATALINK_DFSC
+"Setup DFS Client Support"
+
+L_SUMMARY_DATALINK_DFSC_CONF
+"Configure Data Links instance - DFS Client"
+
+L_SUMMARY_INSTANCE_START
+"Start DB2 Instance"
+
+L_SUMMARY_TOOL_START
+"Start Administration Server"
+
+L_SUMMARY_DATALINK_START
+"Start DB2 Data Links Manager Administrator"
+
+L_SUMMARY_DOCHTEN
+"Uncompress DB2 Product Library (HTML) -- English"
+
+L_SUMMARY_DOCHTDE
+"Uncompress DB2 Product Library (HTML) -- German"
+
+L_SUMMARY_DOCHTES
+"Uncompress DB2 Product Library (HTML) -- Spanish"
+
+L_SUMMARY_DOCHTFR
+"Uncompress DB2 Product Library (HTML) -- French"
+
+L_SUMMARY_DOCHTIT
+"Uncompress DB2 Product Library (HTML) -- Italian"
+
+L_SUMMARY_DOCHTDA
+"Uncompress DB2 Product Library (HTML) -- Danish"
+
+L_SUMMARY_DOCHTFI
+"Uncompress DB2 Product Library (HTML) -- Finnish"
+
+L_SUMMARY_DOCHTNO
+"Uncompress DB2 Product Library (HTML) -- Norwegian"
+
+L_SUMMARY_DOCHTSV
+"Uncompress DB2 Product Library (HTML) -- Swedish"
+
+L_SUMMARY_DOCHTCS
+"Uncompress DB2 Product Library (HTML) -- Czech"
+
+L_SUMMARY_DOCHTHU
+"Uncompress DB2 Product Library (HTML) -- Hungarian"
+
+L_SUMMARY_DOCHTTR
+"Uncompress DB2 Product Library (HTML) -- Turkish"
+
+L_SUMMARY_DOCHTPL
+"Uncompress DB2 Product Library (HTML) -- Polish"
+
+L_SUMMARY_DOCHTRU
+"Uncompress DB2 Product Library (HTML) -- Russian"
+
+L_SUMMARY_DOCHTBG
+"Uncompress DB2 Product Library (HTML) -- Bulgarian"
+
+L_SUMMARY_DOCHTSL
+"Uncompress DB2 Product Library (HTML) -- Slovenian"
+
+L_SUMMARY_DOCHTJA
+"Uncompress DB2 Product Library (HTML) -- Japanese"
+
+L_SUMMARY_DOCHTKO
+"Uncompress DB2 Product Library (HTML) -- Korean"
+
+L_SUMMARY_DOCHTPT
+"Uncompress DB2 Product Library (HTML) -- Brazilian Portuguese"
+
+L_SUMMARY_DOCHTCN
+"Uncompress DB2 Product Library (HTML) -- Simplified Chinese"
+
+L_SUMMARY_DOCHTTW
+"Uncompress DB2 Product Library (HTML) -- Traditional Chinese"
+
+L_SUMMARY_DOCHTNL
+"Uncompress DB2 Product Library (HTML) -- Dutch"
+
+L_SUMMARY_DOCWHEN
+"Uncompress Control Center (HTML) -- English"
+
+L_SUMMARY_DOCWHDE
+"Uncompress Control Center (HTML) -- German"
+
+L_SUMMARY_DOCWHES
+"Uncompress Control Center (HTML) -- Spanish"
+
+L_SUMMARY_DOCWHFR
+"Uncompress Control Center (HTML) -- French"
+
+L_SUMMARY_DOCWHIT
+"Uncompress Control Center (HTML) -- Italian"
+
+L_SUMMARY_DOCWHDA
+"Uncompress Control Center (HTML) -- Danish"
+
+L_SUMMARY_DOCWHFI
+"Uncompress Control Center (HTML) -- Finnish"
+
+L_SUMMARY_DOCWHNO
+"Uncompress Control Center (HTML) -- Norwegian"
+
+L_SUMMARY_DOCWHSV
+"Uncompress Control Center (HTML) -- Swedish"
+
+L_SUMMARY_DOCWHCS
+"Uncompress Control Center (HTML) -- Czech"
+
+L_SUMMARY_DOCWHHU
+"Uncompress Control Center (HTML) -- Hungarian"
+
+L_SUMMARY_DOCWHTR
+"Uncompress Control Center (HTML) -- Turkish"
+
+L_SUMMARY_DOCWHPL
+"Uncompress Control Center (HTML) -- Polish"
+
+L_SUMMARY_DOCWHRU
+"Uncompress Control Center (HTML) -- Russian"
+
+L_SUMMARY_DOCWHBG
+"Uncompress Control Center (HTML) -- Bulgarian"
+
+L_SUMMARY_DOCWHSL
+"Uncompress Control Center (HTML) -- Slovenian"
+
+L_SUMMARY_DOCWHJA
+"Uncompress Control Center (HTML) -- Japanese"
+
+L_SUMMARY_DOCWHKO
+"Uncompress Control Center (HTML) -- Korean"
+
+L_SUMMARY_DOCWHPT
+"Uncompress Control Center (HTML) -- Brazilian Portuguese"
+
+L_SUMMARY_DOCWHCN
+"Uncompress Control Center (HTML) -- Simplified Chinese"
+
+L_SUMMARY_DOCWHTW
+"Uncompress Control Center (HTML) -- Traditional Chinese"
+
+L_SUMMARY_EMPTY
+"
+(!) No operation to perform.
+"
+
+L_SUMMARY_LOG
+"
+The log file can be found in %s.
+
+"
+
+L_SUMMARY_CONFIGURE_SYSTEM
+"
+DB2 System Configuration
+------------------------
+"
+
+L_SUMMARY_CREATE_AGTD_TCP
+"Create agent daemon service in /etc/services:"
+
+L_SUMMARY_CREATE_LOGR_TCP
+"Create agent logger service in /etc/services:"
+
+L_SUMMARY_CREATE
+"
+DB2 Services Creation
+---------------------
+"
+
+L_SUMMARY_USE_EXISTING_INSTANCE
+"
+Set up an existing DB2 instance
+
+"
+
+L_SUMMARY_CREATE_I
+"
+DB2 Instance
+
+"
+
+L_SUMMARY_CREATE_T
+"
+Administration Server
+
+"
+
+L_SUMMARY_CREATE_U
+"
+Fenced User
+
+"
+
+L_SUMMARY_CREATE_D
+"
+DB2 Data Links Manager Administrator
+
+"
+
+L_SUMMARY_EXISTING_USER
+"Use existing user name"
+
+L_SUMMARY_CREATE_USER
+"Create new user name:"
+
+L_SUMMARY_CREATE_GROUP
+"Create new group name:"
+
+L_SUMMARY_CREATE_TCP
+"Create new entry in /etc/services:"
+
+L_SUMMARY_CREATE_TCP_FCM
+"Create new FCM entry in /etc/services:"
+
+L_SUMMARY_CREATE_IPX
+"Setup IPX configuration:"
+
+L_SUMMARY_CREATE_IPX_REGISTER
+"Register with file server:"
+
+L_SUMMARY_UPDATE_DBM
+"Configuration parameters to be updated:"
+
+L_SUMMARY_CREATE_IWM
+"
+DB2 Query Patroller iwm User
+
+"
+
+L_SUMMARY_CDB_CREATE_T
+"Create Local Warehouse Control Database"
+
+L_SUMMARY_CDB_CREATE
+"
+Create Local Warehouse Control Database, %s
+"
+
+L_SUMMARY_DWA_SETUP
+"
+Set up the Instance as a Data Warehouse Agent:
+"
+
+L_SUMMARY_DWA_COPY_IWH_ENV
+"Copy IWH.environment template"
+
+L_SUMMARY_DWA_FUPDT_DB2CODEPAGE_T
+"Update IWH.environment file with DB2CODEPAGE"
+
+L_SUMMARY_DWA_FUPDT_DB2CODEPAGE
+"Update IWH.environment file with DB2CODEPAGE=%s"
+
+L_SUMMARY_DWA_FUPDT_LANG_T
+"Update IWH.environment file with LANG"
+
+L_SUMMARY_DWA_FUPDT_LANG
+"Update IWH.environment file with LANG=%s"
+
+L_SUMMARY_DWA_FUPDT_LC_ALL_T
+"Update IWH.environment file with LC_ALL"
+
+L_SUMMARY_DWA_FUPDT_LC_ALL
+"Update IWH.environment file with LC_ALL=%s"
+
+L_SUMMARY_DWA_FUPDT_DB2INSTANCE_T
+"Update IWH.environment file with DB2INSTANCE"
+
+L_SUMMARY_DWA_FUPDT_DB2INSTANCE
+"Update IWH.environment file with DB2INSTANCE=%s"
+
+L_SUMMARY_DWA_TDB_CAT
+"Catalog target database"
+
+L_SUMMARY_DWA_CAT_NODE_T
+"Catalog node"
+
+L_SUMMARY_DWA_CAT_NODE
+"Node name %s, host name %s, services name %s"
+
+L_SUMMARY_DWA_CAT_TDB_T
+"Catalog target database"
+
+L_SUMMARY_DWA_CAT_TDB
+"Target database name %s, node name %s"
+
+L_SUMMARY_DJ
+"
+Distributed Join for DB2 Data Sources Setup:
+"
+
+L_SUMMARY_DJ_SETUP
+"Update DBM configuration file for DJ"
+
+L_SUMMARY_DJO
+"
+Distributed Join for Oracle Data Sources setup:
+"
+
+L_SUMMARY_DJO_SETUP
+"Update DBM configuration file for DJO"
+ 
+L_SUMMARY_DJO_DJLINK
+"Run djxlink script"
+
+L_SUMMARY_DJO_FUPDT_ORACLEHOME_T
+"Update db2dj.ini file with ORACLE_HOME"
+
+L_SUMMARY_DJO_FUPDT_ORACLEHOME
+"Update db2dj.ini file with ORACLE_HOME=%s"
+
+L_SUMMARY_OLAP
+"
+OLAP instance setup
+"
+
+L_SUMMARY_CREATE_QPA
+"
+DB2 Query Patroller Agent
+
+"
+
+L_SUMMARY_QPA
+"Setup DB2 Query Patroller Agent, %s"
+
+L_SUMMARY_QPA_T
+"Setup DB2 Query Patroller Agent"
+
+L_SUMMARY_CREATE_QPS_USE
+"
+DB2 Query Patroller Server - Use Existing Instance
+
+"
+
+L_SUMMARY_QPS_USE
+"Setup DB2 Query Patroller Server, using %s"
+
+L_SUMMARY_QPS_T
+"Setup DB2 Query Patroller Server"
+
+L_SUMMARY_QPS_USE_SETUP
+"Configure DB2 Query Patroller Server"
+
+L_SUMMARY_CREATE_QPS_UDF
+"
+DB2 Query Patroller Server - Fenced User
+
+"
+
+L_SUMMARY_CREATE_QPS_NEW
+"
+DB2 Query Patroller Server
+
+"
+
+L_SUMMARY_QPS_NEW
+"Setup DB2 Query Patroller Server, %s"
+
+L_SUMMARY_QPS_NEW_T
+"Create Instance"
+
+L_SUMMARY_QPS_NEW_AUTO
+"Auto start Instance"
+
+L_SUMMARY_QPS_NEW_START
+"Start Instance"
+
+STATUS_W
+"DB2 Setup Utility"
+
+STATUS_T
+"Status Report"
+
+L_STATUS_INSTALL
+"
+Installation
+------------
+
+"
+
+L_STATUS_CREATE
+"
+DB2 Services Creation
+---------------------
+"
+
+L_STATUS_SYSTEM_CONFIGURATION
+"
+DB2 System Configuration
+------------------------
+"
+
+L_STATUS_SUCCESS
+"SUCCESS"
+
+L_STATUS_FAILURE
+"FAILURE"
+
+L_STATUS_CANCEL
+"CANCEL"
+
+L_STATUS_CLEANUP
+"CLEANUP"
+
+L_STATUS_PREPARE_LOG
+"
+Preparing log file...
+"
+
+L_STATUS_CREATE_USER
+"Create new user name"
+
+L_STATUS_CREATE_PASSWORD
+"Set password for new user"
+
+L_STATUS_CREATE_GROUP
+"Create new group name"
+
+L_STATUS_CREATE_TCP
+"Create new entry in /etc/services"
+
+L_STATUS_CREATE_TCP_FCM
+"Create new FCM entry in /etc/services"
+
+L_STATUS_CREATE_IPX
+"Setup IPX configuration"
+
+L_STATUS_CREATE_IPX_REGISTER
+"Register with file server"
+
+L_STATUS_UPDATE_DBM
+"Update parameter %s"
+
+L_STATUS_CREATE_AGTD_TCP
+"Create agent daemon service in /etc/services"
+
+L_STATUS_CREATE_LOGR_TCP
+"Create agent logger services in /etc/services"
+
+STATUS_B_VIEWLOG
+"View Log"
+
+LOG_W
+"DB2 Setup Utility"
+
+LOG_T
+"View Log File"
+
+L_LOG
+"
+DB2 Setup Utility Log File
+----------------------
+
+"
+
+L_LOG_START
+"
+Log started at %s
+"
+
+L_LOG_COMMAND
+"
+Command to be executed:
+"
+
+L_LOG_OUTPUT
+"
+Output log of the above command:
+"
+
+L_LOG_TERMINATE_SUCCESS
+"
+Command completed successfully.
+"
+
+L_LOG_TERMINATE_FAILURE
+"
+Command failed. Return code = %d.
+"
+
+L_LOG_TERMINATE_BY_USER
+"
+Command terminated by user.
+"
+
+L_LOG_ELAPSE_TIME
+"
+Elapsed time is %s minutes and %s seconds.
+"
+
+L_LOG_END
+"
+-----------------------------
+End of DB2 Setup Utility Log File
+"
+
+L_DEFAULT_PASSWORD
+"
+(!) A system-generated password, %s, will be used.
+"
+
+L_DEFAULT_SYSTEM
+"
+(!) DB2SYSTEM will be set to '%s'.
+"
+
+L_IGNORE_PASSWORD
+"
+(!) Cannot change password for existing user.
+    Your given password will be ignored.
+"
+
+MD_D
+"CD-ROM"
+
+MD_L
+"(?) Please specify the CD-ROM directory:"
+
+MT_D
+"Unpack Image File"
+
+MT_L
+"(?) Please specify the output directory for the image file:"
+
+MIW_L_L
+"Product Signature"
+
+MIW_L_D
+"DB2 Communications Support:"
+
+MIW_L_D_RTE
+"TCP/IP"
+
+MIW_L_D_IPX
+"IPX/SPX"
+
+MIW_L_D_SNA
+"SNA"
+
+MIW_L_D_DRDA
+"DRDA AS"
+
+MIW_L_P
+"Code Page Conversion Support:"
+
+MIW_L_P_JP
+"Japanese"
+
+MIW_L_P_KR
+"Korean"
+
+MIW_L_P_CN
+"Simplified Chinese"
+
+MIW_L_P_TW
+"Traditional Chinese"
+
+MIM_L
+"DB2 Product Messages:"
+
+MID_L_WCCHELP
+"Control Center Help (HTML):"
+
+MID_L_HTML
+"DB2 Product Library (HTML):"
+
+M_W
+"DB2 Setup Utility"
+
+M_B_CLOSE
+"
+(?) Do you want to exit DB2 Setup Utility?
+    Select OK to proceed.
+"
+
+M_L
+"Select Install to select products and their components to install, or select Create to create the DB2 services."
+
+M_L_QP
+"Select Install to select products and their components to install, or select Setup to configure DB2 Query Patroller Agents or Servers."
+
+M_L_INSTALL
+"To select products and their components, select Install."
+
+M_L_CREATE
+"To create a DB2 Instance, an Administration Server, or a Data Links Manager Administrator select Create."
+
+M_L_QP_SETUP
+"To set up a DB2 Query Patroller Agent or Server, select Setup."
+
+MI_W
+"Install DB2 V7"
+
+MI_L_CAE_RUNTIME
+"DB2 Run-Time Client"
+
+MI_L_CAE
+"DB2 Administration Client"
+
+MI_L_PE
+"DB2 UDB Personal Edition"
+
+MI_L_CPE
+"DB2 Connect Personal Edition"
+
+MI_L_WSRV
+"DB2 UDB Workgroup Edition"
+
+MI_L_ESRV
+"DB2 UDB Enterprise Edition"
+
+MI_L_DM
+"DB2 Warehouse Manager"
+
+MI_L_RC
+"DB2 Relational Connect"
+
+MI_L_DDMU
+"DB2 Connect Enterprise Edition"
+
+MI_L_MPP
+"DB2 UDB Enterprise - Extended Edition"
+
+MI_L_DSRV
+"DB2 Data Links Manager"
+
+MI_L_QPC
+"DB2 Query Patroller Client"
+
+MI_L_QPA
+"DB2 Query Patroller Agent"
+
+MI_L_QPS
+"DB2 Query Patroller Server"
+
+MI_L_SDK
+"DB2 Application Development Client"
+
+MI_L_DWA
+"DB2 Data Warehouse Agent"
+
+MI_L_MSG
+"DB2 Product Messages"
+
+MI_L_DOC
+"DB2 Product Library"
+
+MI_L_L
+"Select the products you are licensed to install.  Your Proof of Entitlement and License Information booklet identify the products for which you are licensed."
+
+MI_L_S
+"To see the preselected components or customize the selection, select Customize for the product."
+
+MI_L_D
+"To choose a language for the following components, select Customize for the product."
+
+MI_L_SPEXC
+"Spatial Extender Client"
+
+MI_L_SPEXS
+"Spatial Extender Server"
+
+MI_L_OLAPSK
+"DB2 OLAP Starter Kit"
+
+MIC_D
+"DB2 Administration Client"
+
+MI_PE_D
+"DB2 Universal Database Personal Edition"
+
+MI_CPE_D
+"DB2 Connect Personal Edition"
+
+MIW_D
+"DB2 Universal Database Workgroup Edition"
+
+MIE_D
+"DB2 Universal Database Enterprise Edition"
+
+MIDM_D
+"DB2 Warehouse Manager"
+
+MIRC_D
+"DB2 Relational Connect"
+
+MIU_D
+"DB2 Connect Enterprise Edition"
+
+MIP_D
+"DB2 Universal Database Enterpise Extended Edition"
+
+MIL_D
+"DB2 Data Links Manager"
+
+MIK_D
+"DB2 Application Development Client"
+
+MIDWA_D
+"DB2 Data Warehouse Agent"
+
+MIM_D
+"DB2 Product Messages"
+
+MID_D
+"DB2 Product Library"
+
+MI_SPEXC_D
+"Spatial Extender Client"
+
+MI_SPEXS_D
+"Spatial Extender Server"
+
+MI_OLAPSK_D
+"DB2 OLAP Starter Kit"
+
+MIK_L_LN
+"Create Links for DB2 Libraries"
+
+MC_DWA_S_D
+"Configuration - DB2 Data Warehouse Agent Services"
+
+MC_DWA_S_I_L_AGTDPORTNAME
+"Agent Daemon Port Name"
+
+MC_DWA_S_I_L_AGTDPORTNUM
+"Agent Daemon Port Number"
+
+MC_DWA_S_I_L_LOGRPORTNAME
+"Logger Port Name"
+
+MC_DWA_S_I_L_LOGRPORTNUM
+"Logger Port Number"
+
+MC_DWA_S_L
+"Enter the service names and port numbers that will be used for TCP/IP connection"
+
+MS_W
+"Create DB2 Services"
+
+MS_W_D
+"Create the DB2 Data Links Manager Administrator"
+
+MS_L
+"Select the items you want to create, and select OK when finished."
+
+MS_L_I_D
+"A DB2 Instance is an environment where you store data and run applications.  An instance can contain multiple databases."
+
+MS_L_I
+"Create a DB2 Instance."
+
+MS_L_E
+"Set up an existing DB2 Instance"
+
+MS_L_I_N
+"Do not create a DB2 Instance."
+
+MS_L_T_D
+"An Administration Server provides services to support client tools that automate the configuration of connections to DB2 databases."
+
+MS_L_T
+"Create the Administration Server."
+
+MS_L_T_N
+"Do not create the Administration Server."
+
+MS_L_D_D
+"A DB2 Data Links Manager Administrator is the user that administers the DB2 Data Links Manager."
+
+MS_L_D
+"Create the DB2 Data Links Manager Administrator."
+
+MS_L_D_N
+"Do not create the DB2 Data Links Manager Administrator."
+
+MSP_I_D
+"DB2 Instance"
+
+MSP_E_D
+"Set up Existing Instance"
+
+MSP_T_D
+"Administration Server"
+
+MSP_D_D
+"DB2 Data Links Manager Administrator"
+
+MSPU_D
+"Fenced User"
+
+MSP_I_L_UNAME
+"User Name"
+
+MSP_I_L_UID
+"User ID"
+
+MSP_I_L_USEUID
+"Use default UID"
+
+MSP_I_L_GNAME
+"Group Name"
+
+MSP_I_L_GID
+"Group ID"
+
+MSP_I_L_USEGID
+"Use default GID"
+
+MSP_I_L_PASS
+"Password"
+
+MSP_I_L_VPASS
+"Verify Password"
+
+MSP_I_L_HOME
+"Home Directory"
+
+MSP_I_L_A
+"Authentication:"
+
+MSP_I_L_A_D
+"Enter User ID, Group ID, Home Directory and Password that will be used for the DB2 Instance."
+
+MSP_I_L_P
+"Select Properties to view or change more options."
+
+MSP_I_L_D
+"Select Default to restore all default settings."
+
+MSP_E_L_UNAME
+"Name of Instance"
+
+MSP_T_L_A_D
+"Enter User ID, Group ID, Home Directory and Password that will be used for the Administration Server."
+
+MSP_D_L_A_D
+"Enter User ID, Group ID, Home Directory and Password that will be used for the DB2 Data Links Manager Administrator."
+
+MSP_T_L_N
+"
+Note: It is not recommended to use the DB2 Instance user ID for
+      security reasons.
+"
+
+MSPU_L
+"Fenced user defined functions (UDFs) and stored procedures will execute under this user and group."
+
+MSPU_L_A_D
+"Enter User ID, Group ID, Home Directory and Password that will be used for the Fenced User."
+
+MSPPT_I_D
+"TCP/IP"
+
+MSPPI_I_D
+"IPX/SPX"
+
+MSPP_I_D
+"DB2 Instance Properties"
+
+MSPP_I_L_A
+"Authentication Type:"
+
+MSPP_I_L_A_D
+"Select one of the following types of authentication for the DB2 Instance."
+
+MSPP_I_L_SERVER
+"Server"
+
+MSPP_I_L_CLIENT
+"Client"
+
+MSPP_I_L_DCS
+"DCS"
+
+MSPP_I_L_DCE
+"DCE"
+
+MSPP_I_L_SERVER_ENCRYPT
+"Server Encrypt"
+
+MSPP_I_L_DCS_ENCRYPT
+"DCS Encrypt"
+
+MSPP_I_L_DCE_SERVER_ENCRYPT
+"DCE Server Encrypt"
+
+MSPP_I_L_P
+"Communication Protocols:"
+
+MSPP_I_L_P_D
+"Select protocols and then select Properties to modify the protocol values."
+
+MSPP_I_L_AUTO
+"Auto start DB2 Instance at system boot."
+
+MSPP_I_L_SAMPLE
+"Create a sample database for DB2 Instance."
+
+MSPP_T_D
+"Administration Server Properties"
+
+MSPP_D_D
+"DB2 Data Links Manager Administrator Properties"
+
+MSPP_D_L_BACKUP_DIR
+"DLFM backup directory"
+
+MSPPT_I_L_SERVICE
+"Service Name"
+
+MSPPT_I_L_PORTNUM
+"Port Number"
+
+MSPPT_I_L_PORTNUM_FCM
+"Port Number (FCM)"
+
+MSPPT_I_L
+"Enter the Service Name and Port Number that will be used for TCP/IP connection."
+
+MSPPI_I_L_SERVER
+"File Server"
+
+MSPPI_I_L_OBJECT
+"Object Name"
+
+MSPPI_I_L_SOCKET
+"IPX Socket"
+
+MSPPI_I_L_UNAME
+"NetWare User ID"
+
+MSPPI_I_L_PASS
+"NetWare Password"
+
+MSPPI_I_L_REGISTER
+"Register with file server"
+
+MSPPI_I_L
+"Enter the required values that will be used for IPX/SPX connection."
+
+DLNK_D
+"DB2 Data Links Manager Administrator Setup"
+
+DLNK_L_JFS
+"Data Links File Manager - JFS Support"
+
+DLNK_L_DFSS
+"Data Links File Manager - DFS Server Support"
+
+DLNK_L_DFSC
+"Data Links File Manager - DFS Client Support"
+
+DLNK_L_LABEL
+"Select a setup option for DB2 Data Links Administrator"
+
+DLNK_S_DFSS_D
+"DB2 Data Links Manager Administrator - DFS Server Support"
+
+DLNK_S_DFSC_D
+"DB2 Data Links Manager Administrator - DFS Client Support"
+
+DLNK_S_DFSC_L_NODEALIAS
+"Node Alias"
+
+DLNK_S_DFSC_L_SERVER
+"Remote Server"
+
+CDB_D
+"DB2 Warehouse Control Database"
+
+CDB_L_SETUP
+"Set up DB2 Warehouse Control Database"
+
+CDB_L_SETUP_NO
+"Do not set up DB2 Warehouse Control Database"
+
+CDB_L_LABEL
+"Select whether you wish to set up DB2 Warehouse Control Database"
+
+CDB_S_D
+"DB2 Warehouse Control Database setup"
+
+CDB_S_L_CDBNAME
+"Control Database"
+
+DWA_D
+"DB2 Data Warehouse Agent"
+
+DWA_L_SETUP
+"Set up DB2 Data Warehouse Agent"
+
+DWA_L_SETUP_NO
+"Do not set up DB2 Data Warehouse Agent"
+
+DWA_L_LABEL
+"Select whether you wish to set up DB2 Data Warehouse Agent"
+
+DWA_S_D
+"DB2 Data Warehouse Agent Setup"
+
+DWA_S_L_CODEPAGE
+"DB2 Codepage"
+
+DWA_S_TDB_D
+"DB2 Data Warehouse Agent Setup - Target Database"
+
+DWA_S_TDB_L_SETUP
+"Catalog Target Database"
+
+DWA_S_TDB_L_SETUP_NO
+"Do not catalog Target Database"
+
+DWA_S_TDB_L_LABEL
+"Select whether you wish to catalog Target Database for DB2 Data Warehouse Agent"
+
+DWA_S_TDB_S_D
+"DB2 Data Warehouse Agent Setup - Catalog Target Database"
+
+DWA_S_TDB_S_L_HOSTNAME
+"Host Name"
+
+DWA_S_TDB_S_L_NODENAME
+"Node Name"
+
+DWA_S_TDB_S_L_SERVICENAME
+"TCP/IP Service Name"
+
+DWA_S_TDB_S_L_TDBNAME
+"Target Database Name"
+
+DJ_D
+"DB2 Distributed Join for DB2 Data Sources"
+
+DJ_L_SETUP
+"Set up DB2 Distributed Join for DB2 Data Sources"
+
+DJ_L_SETUP_NO
+"Do not set up DB2 Distributed Join for DB2 Data Sources"
+
+DJ_L_LABEL
+"Select whether you wish to set up DB2 Distributed Join for DB2 Data Sources"
+
+DJO_D
+"DB2 Distributed Join for Oracle Data Sources"
+
+DJO_L_SETUP
+"Set up DB2 Distributed Join for Oracle Data Sources"
+
+DJO_L_SETUP_NO
+"Do not set up DB2 Distributed Join for Oracle Data Sources"
+
+DJO_L_LABEL
+"Select whether you wish to set up DB2 Distributed Join for Oracle Data Sources"
+
+DJO_S_D
+"DB2 Distributed Join for Oracle Data Sources Setup"
+
+DJO_S_L_ORACLEHOME
+"Oracle Home Directory"
+
+DQP_D
+"DB2 Query Patroller"
+
+DQP_L_LABEL
+"Select whether you wish to set up a DB2 Query Patroller Agent or Server."
+
+DQP_L_AGENT
+"DB2 Query Patroller Agent"
+
+DQP_L_SERVER
+"DB2 Query Patroller Server"
+
+QPA_D
+"DB2 Query Patroller Agent"
+
+QPA_C_L_LABEL
+"Select a setup option for DB2 Query Patroller Agent."
+
+QPA_C_L_AGENT
+"Setup DB2 Query Patroller Agent"
+
+QPA_C_L_NO
+"Do not setup DB2 Query Patroller Agent"
+
+QPA_L_LABEL
+"Set TCP/IP properties for DB2 Query Patroller Agent."
+
+QPA_L_TCPIP
+"TCP/IP Properties"
+
+QPS_D
+"DB2 Query Patroller Server"
+
+QPS_L_LABEL
+"Select a setup option for DB2 Query Patroller Server."
+
+QPS_L_USE
+"Use Existing Instance"
+
+QPS_L_NEW
+"Create New Instance"
+
+QPS_L_SETUP
+"Set up a DB2 Query Patroller Server"
+
+QPS_L_NO
+"Do not setup a DB2 Query Patroller Server"
+
+QPS_USE_D
+"DB2 Query Patroller Server - Use Existing Instance"
+
+QPS_USE_L_LABEL
+"Enter information about instance."
+
+QPS_USE_L_NODEGROUP
+"Node Group"
+
+QPS_USE_L_NODENUMBER
+"Node Number"
+
+QPS_USE_L_DATABASE
+"Database"
+
+QPS_USE_L_TABLESPACE
+"Tablespace"
+
+QPS_USE_L_RESULT
+"Result Tablespace"
+
+QPS_USE_L_PATHNAME
+"Tablespace Path"
+
+QPS_USE_L_OPTIONAL
+"Optional Properties"
+
+QPS_USE_L_DMS
+"DMS Tablespace Size"
+
+QPS_USE_CHK_D
+"DB2 Query Patroller Schema named IWM has been found"
+
+QPS_USE_CHK_L
+"Existing DB2 Query Patroller schema objects have been found.  Do you wish to remove these objects and recreate them?"
+
+QPS_NEW_D
+"DB2 Query Patroller Server - New Instance"
+
+QPS_NEW_L_DESC
+"Enter User ID, Group ID, Home Directory and Password that will be used for the New Instance."
+
+QPS_NEW_UDF_D
+"Fenced User"
+
+QPS_NEW_PPT_D
+"New Instance Properties"
+
+QPS_NEW_PPT_L_DESC
+"Select one of the following types of authentication for the New Instance."
+
+QPS_TCP_D
+"DB2 Query Patroller Server TCP/IP Properties"
+
+QPS_TCP_L_LABEL
+"Enter a TCP/IP Service Name and Port Number for the DB2 Query Patroller Server."
+
+HELP_M
+"
+DB2 Setup Utility
+-------------
+
+You can use the DB2 Setup Utility to install DB2 Version 7,
+to add selected components to an existing DB2 product, or 
+to create required DB2 instances.
+
+Select Close to close the DB2 Setup Utility without 
+performing any actions.
+
+Select Install to select products and components to 
+install.
+
+Select Create if you want to create or setup one of the 
+following items:
+"
+
+HELP_M_DQP
+"
+DB2 Setup Utility
+-------------
+
+You can use the DB2 Setup Utility to install DB2 Query  
+Patroller and configure DB2 Query Patroller Agents and 
+Servers.
+
+Select Close to close the DB2 Setup Utility without 
+performing any actions.
+
+Select Install to select products to install.
+
+Select Setup to configure a DB2 Query Patroller Agent or
+Server.
+"
+
+HELP_M_I
+"
+* A DB2 Instance
+
+  A DB2 Instance is an environment where you store data 
+  and   run applications.  An instance can contain 
+  multiple databases.  Depending on your needs, you may
+  want to create more than one instance.  For example, 
+  you can isolate a development environment from a 
+  production environment by creating a different database
+  manager instance for each.
+"
+
+HELP_M_T
+"
+* The Administration Server
+
+  The Administration Server provides services on the server
+  to support client tools that automate the configuration of
+  connections to DB2 databases.  It also enables you to
+  administer DB2 from your server system or a remote client
+  using the Control Center.  For example, you can start DB2
+  on the server locally or from a remote client.
+"
+
+HELP_M_D
+"
+* The DB2 Data Links Manager Administrator
+
+  The DB2 Data Links Manager Administrator is the user that
+  administers the DB2 Data Links Manager.
+"
+
+HELP_MI
+"
+Install DB2 V7
+----------------
+
+From the Install DB2 V7 screen, select the DB2 products
+that you want to install and deselect those that you do not
+want to install.
+
+To select the required and optional components that are used
+in a typical DB2 environment, select a product and then
+select Customize.  The components are preselected for you.
+
+When you have selected all the items you want to install,
+confirm your choices by selecting OK.
+
+To undo any selections you made, select Cancel.
+
+The product descriptions that follow will assist you in
+making your choices.
+"
+
+HELP_MI_C
+"
+DB2 Run-Time Client
+
+The DB2 Run-Time Client provides the ability for 
+workstations to access DB2 Universal Database 
+servers and DB2 Connect gateways.
+
+DB2 Administration Client
+
+The DB2 Administration Client provides all of the 
+functions of the Run-Time Client and also includes 
+the DB2 Administration tools and documentation.
+"
+
+HELP_MI_PE
+"
+DB2 Universal Database Personal Edition
+
+DB2 UDB Personal Edition provides a single-user version 
+of the DB2 Universal Database.  DB2 UDB Personal Edition 
+can be used to create and manage local databases.  DB2 UDB 
+Personal Edition can also be used as a remote client 
+connecting to a DB2 Server.
+"
+
+HELP_MI_CPE
+"
+DB2 Connect Personal Edition
+
+DB2 Connect Personal Edition provides access from a single 
+workstation to DB2 databases residing on servers such as 
+MVS/ESA, OS/390, OS/400, VM and VSE, as well as to DB2 
+Universal Database servers on Windows NT, Unix, and
+OS/2.
+"
+
+HELP_MI_W
+"
+DB2 Universal Database Workgroup Edition
+
+The DB2 Workgroup Edition provides the functions 
+to create and manage databases in a LAN environment 
+and is able to accept requests from remote clients.
+"
+
+HELP_MI_E
+"
+DB2 Universal Database Enterprise Edition
+
+The DB2 Enterprise Edition provides the functions to 
+create and manage single partition databases, and gateway 
+access to host or AS/400 application servers.
+"
+
+HELP_MI_DM
+"
+DB2 Warehouse Manager
+
+DB2 Warehouse Manager provides additional features beyond 
+basic warehouse functionality.  It includes a data 
+warehouse agent and data warehouse transformers.
+"
+
+HELP_MI_RC
+"
+DB2 Relational Connect
+
+This product allows your DB2 EE or EEE federated server 
+read-only access to data stored in Oracle databases.  
+DB2 Relational Connect allows you to set up two 
+different Oracle wrapper modules, one for use with 
+SQL*Net Version 1 and Version 2 client software, and 
+one for use with Net8 client software.
+"
+
+HELP_MI_U
+"
+DB2 Connect Enterprise Edition
+
+DB2 Connect Enterprise Edition is a connectivity 
+server that concentrates and manages connections 
+from multiple desktop clients and web applications
+to DB2 database servers running on AS/400 systems, 
+or host systems such as DB2 for OS/390, and DB2 for 
+VSE & VM.
+"
+
+HELP_MI_P
+"
+DB2 Universal Database Enterprise - Extended Edition
+
+DB2 UDB Enterprise - Extended Edition provides the 
+features and functions to create and manage databases 
+distributed across multiple partitions of the same 
+platform. 
+"
+
+HELP_MI_L
+"
+DB2 Data Links Manager
+
+The DB2 Data Links Manager manages files on a file server
+that are pointed to, and managed by, DATALINK values in a
+DB2 database.  You use the DB2 Data Links Manager to 
+control access to files that are external to the DB2 
+database.
+"
+
+HELP_MI_SPEXC
+"
+DB2 Spatial Extender Client
+
+The Spatial Extender Client includes example 
+programs to demonstrate the functionality of 
+DB2 Spatial Extender.
+"
+
+HELP_MI_SPEXS
+"
+DB2 Spatial Extender Server
+
+The Spatial Extender server allows you to store 
+geographical information in DB2 columns and rows.
+"
+
+HELP_MI_OLAPSK
+"
+DB2 OLAP Starter Kit
+
+The OLAP Starter Kit allows you to create and manage 
+applications for analyzing data from relational or 
+multidimensional data sources.
+"
+
+HELP_QPA
+"
+DB2 Query Patroller Agent
+
+The DB2 Query Patroller Agent processes queries 
+scheduled to it by the DB2 Query Patroller server.
+On DB2 EEE, the DB2 Query Patroller agent can execute 
+on one or more database nodes, including the node where
+the DB2 Query Patroller server resides. 
+"
+
+HELP_QPS
+"
+DB2 Query Patroller Server
+
+The DB2 Query Patroller Server executes on a single
+database node.  The Server accepts, analyzes, prioritizes
+and schedules requests to the target data warehouse.
+"
+
+HELP_QPC
+"
+The DB2 Query Patroller Client contains the following
+components:
+
+A QueryAdministrator utility that provides a GUI 
+interface for administering the DB2 Query Patroller system.
+
+A QueryEnabler utility that intercepts submitted queries
+and places them under the management of the DB2 Query
+Patroller system. QueryEnabler allows you to schedule the
+execution of your queries and wait for the query results 
+to return, or have the results returned at a later time.
+
+A QueryMonitor GUI tool which is used to monitor and manage
+queries that have been submitted through the DB2 Query
+Patroller system. You can monitor query status, view job
+details, submit new jobs, cancel jobs, drop result tables,
+and resubmit completed jobs.
+
+A Tracker system administration GUI utility that provides
+reports displaying database usage history for queries that
+have been managed by the DB2 Query Patroller system.
+"
+
+HELP_MI_K
+"
+DB2 Application Development Client
+
+DB2 Application Development Client is a collection of 
+tools for the creation of character-based, multimedia, or
+object-oriented database applications.  It includes all the
+DB2-specific tools that complement your application
+development environment.
+"
+
+HELP_MI_DWA
+"
+DB2 Data Warehouse Agent
+
+A DB2 Data Warehouse agent manages the flow of data between 
+warehouse sources and warehouse targets.  Warehouse agents 
+use Open Database Connectivity (ODBC) drivers or DB2 CLI to 
+communicate with different databases.  Several warehouse 
+agents can handle the transfer of data between warehouse 
+sources and warehouse targets.
+"
+
+HELP_MI_M
+"
+DB2 Product Messages
+
+All language-specific messages, help, panels, and
+application defaults are stored independently of the
+programs, and are available in the list of languages 
+that is encoded in code sets.
+"
+
+HELP_MI_D
+"
+DB2 Product Library
+
+DB2 HTML documentation can be installed in a desired 
+locale and viewed on-line. Published versions of DB2 
+documentation can be ordered from IBM.  For a complete 
+listing of DB2 documentation, refer to the DB2 Quick 
+Beginnings manual.
+"
+
+HELP_MI_EXPLAIN
+"
+The component list is divided into two groups: those that
+are required by DB2 and those that are optional.
+
+The optional components that are used in a typical DB2
+environment are preselected; they are not required but are
+recommended.  You can deselect them to save disk space on
+your system.
+
+The required components are compulsory and will be 
+installed automatically.
+
+Use Select All to select all the optional components, or 
+use Deselect All to deselect them.
+
+To restore the preselected list of all the recommended
+optional components, select Default.
+
+Select OK to confirm your selection, or select Cancel to
+undo any changes you have made.
+
+The component descriptions that follow will assist you in
+making your choices.
+"
+
+HELP_DB2SPEXC
+"
+The Spatial Extender Client
+
+The Spatial Extender Client provides example
+programs to demonstrate the functionality of DB2 
+Spatial Extender.
+"
+
+HELP_DB2SPEXS
+"
+Spatial Extender Server
+
+The Spatial Extender Server allows you to store 
+geographical information in DB2 columns and rows.
+"
+
+HELP_DB2OLAPSK
+"
+OLAP Starter Kit
+
+The OLAP Starter Kit contains server code that 
+allows you to create and manage applications for 
+analyzing data from relational or multidimensional
+data sources.
+"
+
+HELP_MIC
+"
+DB2 Administration Client 
+-------------------------
+"
+
+HELP_MIC_RUNTIME
+"
+DB2 Run-Time Client
+-------------------
+"
+
+HELP_MIPE
+"
+DB2 Universal Database Personal Edition
+---------------------------------------
+"
+
+HELP_MICPE
+"
+DB2 Connect Personal Edition
+----------------------------
+"
+
+HELP_MIW
+"
+DB2 Universal Database Workgroup Edition
+----------------------------------------
+"
+
+HELP_MIE
+"
+DB2 Universal Database Enterprise Edition
+-----------------------------------------
+"
+
+HELP_MIDM
+"
+DB2 Warehouse Manager
+---------------------
+"
+
+HELP_MIRC
+"
+DB2 Relational Connect
+----------------------
+"
+
+HELP_MIU
+"
+DB2 Connect Enterprise Edition
+------------------------------
+"
+
+HELP_MIP
+"
+DB2 Universal Database Enterprise - Extended Edition
+----------------------------------------------------
+"
+
+HELP_MIL
+"
+DB2 Data Links Manager
+----------------------
+"
+
+HELP_MIK
+"
+DB2 Application Development Client
+----------------------------------
+"
+
+HELP_MIDWA
+"
+DB2 Data Warehouse Agent
+------------------------
+"
+
+HELP_MIM
+"
+DB2 Product Messages
+--------------------
+"
+
+HELP_MID
+"
+DB2 Product Library
+-------------------
+"
+
+HELP_MISPEXC
+"
+Spatial Extender Client
+-----------------------
+"
+
+HELP_MISPEXS
+"
+Spatial Extender Server
+-----------------------
+"
+
+HELP_MIOLAPSK
+"
+OLAP Starter Kit
+----------------
+"
+
+HELP_CLIENT
+"
+DB2 Client
+
+Client functions are provided by the DB2 Administration
+Client or Run-Time Client.  Both provide a run-time
+environment for applications allowing access to any
+supported remote database server.
+"
+
+HELP_ODBC
+"
+Open Database Connectivity (ODBC)
+
+ODBC support enables applications developed using ODBC and
+DB2 Call Level Interface (CLI) APIs to work with any
+database server in the DB2 Universal Database family.
+"
+
+HELP_JDBC
+"
+Java Support
+
+You can use DB2 Universal Database Java Support to run the
+following types of Java programs:
+
+* Java applications, which rely on DB2 clients to connect
+  to DB2.
+
+* Java applets, which do not require any other DB2 Universal
+  Database component on the client.
+"
+
+HELP_DB2GS
+"
+Getting Started
+
+Getting Started contains the DB2 First Steps tool.  
+After you install DB2, you can begin exploring 
+Version 7 using DB2 First Steps.  With First Steps, 
+you can create and work with sample databases, and 
+if you have installed the DB2 documentation, you can 
+take a Quick Tour, a Business Intelligence 
+tutorial, and view the DB2 on-line product library.
+
+To run First Steps you will need the Java Runtime 
+Environment (JRE) Version 1.1.8.  If you are installing 
+DB2 for AIX, the correct JRE will be installed if necessary. 
+For the latest information on supported JREs on all 
+platforms go to:
+ 
+http://www.software.ibm.com/data/db2/udb/db2cc.
+
+After installation is complete, you can start First Steps
+by entering db2fs at the command line. 
+"
+
+HELP_DB2ICW
+"
+Information Catalog for the Web
+
+You can use the Information Catalog for the Web to access 
+information catalogs and obtain descriptions of available 
+data, including format, currency, owner, and location.  
+From any Web browser, users can run available helper 
+applications to view data.  Refer to the Data Warehouse 
+documentation for setup information.
+"
+
+HELP_DB2LDAP
+"
+LDAP (Lightweight Directory Access Protocol)
+
+LDAP (Lightweight Directory Access Protocol) is a 
+client-server protocol for accessing a directory service. 
+With LDAP support, if protocol information is not found in 
+the local database, node or DCS directory, DB2 will try to 
+retrieve the information from LDAP.  
+"
+
+HELP_DB2CJ
+"
+Common Jar Files
+
+Jar files shared by the DB2 Control Center, DB2 Stored 
+Procedure Builder, and DB2 Query Patroller.
+"
+
+HELP_DB2WCC
+"
+Control Center
+
+The Control Center is a Java based graphical tool for DB2
+administration including:  managing database, tables, and
+views; configuring systems; performing database backup and
+recovery; scheduling jobs; and replicating data.
+"
+
+HELP_DB2ADT
+"
+Application Development Tools
+
+A collection of tools for creating character-based, 
+multimedia, or object-oriented database applications. 
+Included are all of the DB2 tools that complement your
+application development environment.
+"
+
+HELP_DB2ADTSP
+"
+Sample Applications
+
+DB2 allows applications to be developed using many popular 
+programming languages.  Sample applications for 
+supported programming languages are provided.
+" 
+
+HELP_DB2CDB
+"
+DB2 Data Warehouse Control Database
+
+The Data Warehouse control database contains
+meta data inforation for the DB2 Data Warehouse 
+environment.
+"
+
+HELP_DB2CTLSRV
+"
+DB2 Control Server
+
+The DB2 Control Server provides administrative and status
+reporting for Satellite systems using a database.  During
+synchronization processing, the Satellite system connects
+to the Control Server's database to receive instructions
+used to administer it, and to report its status.
+"
+
+HELP_DB2RTE
+"
+DB2 Run-time Environment
+
+The DB2 Run-Time Environment is a compulsory component
+for the DB2 Universal Database server.  The Run-Time 
+Environment and DB2 Engine contain all of the executables 
+and libraries needed for the relational database management
+system to accept requests from DB2 Clients on local and 
+wide area networks. 
+"
+
+HELP_ENGN
+"
+The DB2 Engine is a compulsory component for the DB2 
+Universal Database server.  The DB2 Engine and Run-Time 
+Environment contain all of the executables and 
+libraries needed for the relational database management
+system to accept requests from DB2 Clients on local and 
+wide area networks.
+" 
+
+HELP_CSRTE
+"
+DB2 Communication Support - TCP/IP
+
+TCP/IP communication support for the DB2 server is installed
+as a required component.
+"
+
+HELP_CSIPX
+"
+DB2 Communication Support - IPX/SPX
+
+IPX/SPX communication support for the DB2 server is installed
+as a required component.
+"
+
+HELP_CSSNA
+"
+DB2 Communication Support - APPC
+
+APPC communication support for the DB2 server is installed
+as a required component.
+"
+
+HELP_CSDRDA
+"
+DB2 Communication Support - DRDA Application Server
+
+The DB2 Distributed Relational Database Architecture (DRDA)
+Application Server feature enables DB2 to function as a
+database server for Application Requesters using the DRDA
+protocol, such as DB2 for MVS, DB2/400, and DB2 for VM/VSE.
+"
+
+HELP_DB2REPL
+"
+Replication
+
+Replication is a set of automated tools that replicate
+relational data from DB2 and heterogeneous sources and
+targets.  You can use these tools to define, synchronize,
+automate, and manage replication operations from the DB2
+Universal Database Control Center for data across your
+enterprise.  The Replication tools include the Capture and
+Apply programs on most DB2 databases, and can be used with
+other utilities to replicate to non-IBM databases, such as
+Oracle, Sybase, and Informix.
+"
+
+HELP_DB2SPB
+"
+Stored Procedure Builder
+
+DB2 Stored Procedure Builder is a graphical application 
+that assists you with creating stored procedures that run 
+on the entire DB2 database family ranging from the 
+workstation to OS/390.  Using Stored Procedure Builder, 
+you can create stored procedures, build stored procedures 
+on local and remote DB2 servers, modify and rebuild existing
+stored procedures, and run stored procedures for testing and 
+debugging the execution of installed stored procedures.
+"
+
+HELP_DB2DAS
+"
+Administration Server
+
+The Administration Server provides services on the server to
+support client tools that automate the configuration of
+connections to DB2 databases.  It also enables you to
+administer DB2 from remote clients.
+"
+
+HELP_DB2DLNK
+"
+DB2 Data Links Manager Support
+
+DB2 Data Links Manager Support includes:
+
+DB2 Data Links Manager - registers all the files that
+are linked to a DB2 database. It tracks the meta data 
+for the linked files and previously linked files if those 
+files were linked to DATALINK columns.
+
+DB2 Data Links Manager Filter - filters file system commands 
+to insure that registered files are not deleted or renamed.
+Optionally, it also filters commands to ensure that proper
+access authority exists.
+"
+
+HELP_DB2SAMPL
+"
+DB2 Sample Database Source
+
+The DB2 Sample Database Source component contains source 
+code to create DB2 UDB and OLAP sample databases. You can
+verify that DB2 is installed correctly by creating the DB2
+UDB sample database on your system, and accessing data from
+the database.  The product documentation and sample 
+programs refer to the tables and fields of the DB2 UDB 
+sample database.  The DB2 UDB Business Intelligence 
+Tutorial refers to tables and fields of the OLAP sample 
+database.  This component is required if you want to 
+create sample databases using the following commands:
+
+db2sampl [path]
+
+This command is used to create a sample database for 
+DB2 Universal Database.
+
+olapsmp [path]
+
+This command is used to create an OLAP sample database.
+"
+
+HELP_DB2DJ
+"
+Distributed Join for DB2 Data Sources
+
+This option installs the DB2 wrapper module that enables 
+your DB2 EE or EEE server to access DB2 family data 
+sources. 
+"
+
+HELP_DB2ISV
+"
+ISV Tool Kit
+
+The ISV Toolkit provides templates and samples that
+developers of data warehousing solutions can use to
+integrate their applications with the Data Warehouse
+Center.  Use these templates to write programs or 
+automated interfaces that transfer and transform 
+an application's meta data into a format that the 
+Data Warehouse Center or the Information Catalog 
+Manager can use.
+"
+
+HELP_DB2MPP
+"
+DB2 Parallel Extension
+
+DB2 Parallel Extension enables a database to be partitioned
+across multiple, independent computers of a common platform.  
+(Each computer has its own processor, memory, and DASD, and
+is binary-compatible with the others.)  However, to the end
+user and application developer, the partitioned database
+appears as a single database on a single computer.
+"
+
+HELP_DB2DWA
+"
+DB2 Data Warehouse Agent
+
+A DB2 Data Warehouse agent manages the flow of data 
+between warehouse sources and warehouse targets. 
+Warehouse agents use Open Database Connectivity (ODBC)
+drivers or DB2 CLI to communicate with different databases.
+Several warehouse agents can handle the transfer of data 
+between warehouse sources and warehouse targets.
+"
+
+HELP_DB2TRANS
+"
+DB2 Data Warehouse Transformers
+
+DB2 Data Warehouse transformers are stored procedures and
+user-defined functions that you can use to transform data 
+in a warehouse step.  You can use warehouse transformers 
+to clean, invert, and pivot data; to generate primary keys 
+and period tables; and to calculate various statistics.
+"
+
+HELP_DB2DJO
+"
+Distributed Join for Oracle Data Sources
+
+This option installs the Oracle wrapper modules that enable
+your DB2 EE or EEE federated server to access data stored 
+in Oracle databases.  Utilities to create two different 
+Oracle wrapper modules are included, one for use with 
+SQL*Net Version 1 and Version 2 client software, and one 
+for use with Net8 client software.
+"
+
+HELP_DB2CONV
+"
+Code Page Conversion Support
+
+DB2 provides support for character conversion that allows
+your application and database to use different code pages.
+Characters from one code page must be mapped to the other
+code page to maintain the meaning of the data.
+"
+
+HELP_DB2ARC
+"
+Spatial Extender Arc Explorer
+
+The Spatial Extender ArcExplorer is a browser that allows 
+you to view, render, and analyze spatial layers.
+"
+
+HELP_DB2GEO
+"
+Geocoder Reference Data
+
+Geocoder reference data is used by the Spatial Extender's 
+Geocoder to populate spatial columns. Reference data is 
+compared with address information from existing data in 
+your system for geocoding purposes.
+"
+
+HELP_DDCS
+"
+DB2 Connect Support
+
+This multi-user gateway version of DB2 Connect provides a
+gateway to access DRDA application servers.  Users on the
+LAN can run desktop applications that access DB2 host
+databases.
+"
+
+HELP_WSRV
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Universal Database Workgroup Edition product.
+This component must be installed to use the DB2 Universal
+Database Workgroup Edition product. 
+"
+
+HELP_ESRV
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Universal Database Enterprise Edition product.  
+This component must be installed to use the DB2 Universal
+Database Enterprise Edition product. 
+"
+
+HELP_DDMU
+"
+Product Signature
+
+This component is used to provide a product signature for 
+the DB2 Connect Enterprise Edition product.  This component
+must be installed to use the DB2 Connect Enterprise Edition
+product. 
+"
+
+HELP_MPP
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Universal Database Enterprise - Extended 
+Edition product.  This component must be installed to 
+use the DB2 Universal Database Enterprise - Extended 
+Edition product. 
+"
+
+HELP_DSRV
+"
+Product Signature
+
+This component is used to provide a product signature for 
+the DB2 Data Links Manager product.  This component must be
+installed to use the DB2 Data Links Manager product. 
+"
+
+HELP_PE
+"
+Product Signature
+
+This component is used to provide a product signature for 
+the DB2 Universal Database Personal Edition product.  This
+component must be installed to use the DB2 Universal
+Database Personal Edition product. 
+"
+
+HELP_CPE
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Connect Personal Edition product.  This 
+component must be installed to use the DB2 Connect 
+Personal Edition product.
+"
+
+HELP_DM
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Warehouse Manager product.  This component must 
+be installed to use the DB2 Warehouse Manger product.
+"
+
+HELP_RC
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Relational Connect product.  This component 
+must be installed to use the DB2 Relational Connect product.
+"
+
+HELP_GSE
+"
+Product Signature
+
+This component is used to provide a product signature 
+for the DB2 Spatial Extender product.  This component must 
+be installed to use the DB2 Spatial Extender product.
+"
+
+HELP_SDK
+"
+DB2 Application Development Client is comprised of a 
+collection of tools designed to meet the needs of 
+database application developers.  It includes all 
+necessary development tools, except a compiler.  It
+provides support for the creation of character-based, 
+multimedia, or object-oriented applications.
+
+The DB2 Application Development Client can be installed
+on the server where DB2 is installed or on a remote 
+client.
+
+It is optional to create links for the DB2 libraries.  You
+may want to create these links if you are developing or
+running applications to avoid having to specify the full
+path to the product libraries and include files.  Note that
+links can only be established for one release of DB2 on a
+given system.
+"
+
+HELP_MSG
+"
+All language-specific messages, help, panels, and
+application defaults are stored independently of the
+programs and are available in the list of languages that is
+encoded in code sets.
+
+Note: English messages are installed with the DB2 Client.
+"
+
+HELP_DOC
+"
+DB2 HTML documentation can be installed in a desired 
+locale and viewed on-line. Published versions of DB2 
+documentation can be ordered from IBM.  For a complete 
+listing of DB2 documentation, refer to the DB2 Quick 
+Beginnings manual.
+"
+
+HELP_MS
+"
+Create DB2 Services
+-------------------
+"
+
+HELP_MS_I
+"
+DB2 Instance
+
+A DB2 Instance is an environment where you store data and
+run applications.  An instance can contain multiple
+databases.  Depending on your needs, you may want to create
+more than one instance.  For example, you can isolate a
+development environment from a production environment by
+defining a different database manager instance for each.
+
+To create a DB2 Instance, select 'Create a DB2 Instance'.
+"
+
+HELP_MS_T
+"
+Administration Server
+
+The Administration Server provides services on the server 
+to support client tools that automate the configuration of
+connections to DB2 databases.  It also enables you to
+administer DB2 from your server system or a remote client
+using the Control Center.  For example, you can start DB2
+on the server locally or from a remote client.
+
+To create the Administration Server, select 'Create the
+Administration Server'.
+"
+
+HELP_MS_D
+"
+DB2 Data Links Manager Administrator
+
+The DB2 Data Links Manager Administrator is the user that
+administers the DB2 Data Links Manager server.  This user
+should not be used for tasks other than administering the
+DB2 Data Links Manager server.
+
+To create the DB2 Data Links Manager Administrator, select
+'Create the DB2 Data Links Manager Administrator'.
+"
+
+HELP_MSP_I
+"
+DB2 Instance
+------------
+
+A DB2 Instance is an environment where you store data and
+run applications.  An instance can contain multiple
+databases.  Depending on your needs, you may want to create
+more than one instance.  For example, you can isolate a
+development environment from a production environment by
+defining a different database manager instance for each.
+"
+
+HELP_MSP_T
+"
+Administration Server
+---------------------
+
+The Administration Server provides services on the server 
+to support client tools that automate the configuration of
+connections to DB2 databases.  It also enables you to
+administer DB2 from your server system or a remote client
+using the Control Center.  For example, you can start DB2
+on the server locally or from a remote client.
+"
+
+HELP_MSPU
+"
+Fenced User and Group
+---------------------
+
+Fenced user defined functions (UDFs) and stored procedures
+will execute under this user and group.  The group must be
+the primary group of the user.
+
+Application developers often need to create their own suite
+of functions specific to their application or domain.  User-
+defined scalar functions make this possible, expanding the
+scope of DB2 to include, for example, customized business or
+scientific functions.  These functions can operate over all
+database types.
+
+Fenced UDFs allow queries to contain powerful computation
+and search predicates to filter irrelevant data close to the
+source of the data, therefore ensuring data integrity.
+
+Fenced UDFs are particularly flexible, as they can operate
+on data managed within or outside of DB2.
+"
+
+HELP_MSP_D
+"
+DB2 Data Links Manager Administrator
+------------------------------------
+
+The DB2 Data Links Manager Administrator is the user that
+administers the DB2 Data Links Manager server.  This user
+should not be used for tasks other than administering the
+DB2 Data Links Manager server.
+"
+
+HELP_AUTHENTICATION
+"
+Authentication
+
+Authentication involves checking the user ID, home directory 
+and password for validity.  The user ID and password are 
+stored in the operating system security files. 
+
+To use the system-generated user ID or group ID, select
+'Use Default UID' or 'Use Default GID'. 
+
+To view or change more options, select Properties.
+
+To restore all default values, select Default.
+
+The user ID you specify:
+
+* Must be a valid DB2 user ID.  Valid DB2 user IDs:
+
+    - Can contain 1 to 8 characters
+    - Can include letters, numbers, @, #, or $
+    - Cannot begin with IBM, SYS, SQL, or a number
+    - Cannot be a DB2 reserved word (USERS, ADMINS, GUESTS,
+      PUBLIC, or LOCAL), or an SQL reserved word
+    - Cannot end with a $
+    - Cannot include accented characters
+
+The home directory you specify:
+
+* Can be any valid new or existing directory, although 
+  permission problems may arise if an existing directory 
+  is used.
+
+The password you specify:
+
+* Can contain 1 to 8 characters
+
+* Should not have an expiry date, or usage restrictions
+
+* Must begin with:
+
+    - A through Z, or a through z
+    - @, #, or $
+
+* Can include:
+
+    - A through Z, or a through z
+    - 0 through 9
+    - @, #, $, or &
+
+Note:
+
+* In a NIS environment, user and group IDs must be created
+  on the NIS server.  If you are currently on a NIS client,
+  you must use an existing user and group ID.
+
+* Passwords and user IDs are case-sensitive.
+
+* The system will generate a password for new user IDs if no
+  password is provided.
+
+* The system will ignore the password if the given user ID
+  already exists.
+"
+
+HELP_AUTH_TYPE
+"
+Authentication Type
+
+This parameter specifies the authentication type for the
+instance.  The authentication type of the instance applies
+to all databases owned by the instance.
+
+Authentication types include:
+
+* SERVER
+
+Specifies that the authentication occurs on the server 
+using the local operating system security.
+
+* SERVER_ENCRYPT
+
+Specifies that the server accepts encrypted SERVER 
+authentication schemes.
+
+* CLIENT
+
+Specifies that the authentication occurs on the database 
+partition where the application is invoked using operating 
+system security.
+
+* DCS
+
+Primarily used to catalog a database accessed using DB2 
+Connect.
+
+* DCS_ENCRYPT
+
+Specifies that DB2 Connect accepts encrypted SERVER 
+authentication schemes.
+
+* DCE
+
+Specifies that the user is authenticated using DCE 
+Security Services.
+
+* DCE_SERVER_ENCRYPT
+
+Specifies that the server accepts DCE authentication or 
+encrypted SERVER authentication schemes.
+
+* KERBEROS
+
+Used when both the DB2 client and server are on operating 
+systems that support the Kerberos security protocol.
+
+* KRB_SERVER_ENCRYPT
+
+Specifies that the server accepts KERBEROS authentication or
+encrypted SERVER authentication schemes.
+
+For more information on Authentication Types, refer to the 
+DB2 Administration Guide.
+"
+
+HELP_AUTO
+"
+Auto Starting Instance
+
+Select 'Auto start DB2 Instance at system boot' to
+automatically start the database manager instance when the
+system is booted.  This eliminates the need to manually
+start the DB2 Instance with the db2start command after each
+boot.
+"
+
+HELP_SAMPLE
+"
+Sample Database
+
+Select 'Create a sample database for DB2 Instance' to 
+create a DB2 sample database after the DB2 Instance has been 
+created.
+
+If you want to create an Data Warehouse or OLAP sample 
+database after installation is complete, use the 
+following commands:
+
+olapsmp [path]
+
+This command is used to create an OLAP sample database.
+
+dwcsmp  userid password [path]
+
+This command is used to create a DB2 Data Warehouse sample 
+database.
+"
+
+HELP_SECURITY
+"
+* For security reasons it is recommended that you do not use
+  the user ID for the Administration Server or the Fenced
+  User.  Doing so would allow the instance to have full
+  access permission to other instances on your system.
+"
+
+HELP_BOOT
+"
+* The Administration Server is always started on system
+  boot.
+"
+
+MSPP_I_B_HELP
+"
+Communication Protocols
+
+A DB2 Instance is an environment where you store data and
+run applications.  An instance can contain multiple
+databases.  Depending on your needs, you may want to create
+more than one instance.  For example, you can isolate a
+development environment from a production environment by
+defining a different database manager instance for each.
+
+In order for remote clients to access data stored in the DB2
+Instance, you must configure your clients and the DB2
+Instance for communications.
+
+DB2 Setup Utility automatically detects the communication
+protocols installed on the system, selects them, and
+generates default values for each of them.  You can modify
+these default selections and values by selecting Properties.
+
+You can deselect a protocol that you do not want the DB2
+Instance to use.  However, you cannot specify a protocol
+that is not detected.
+
+For information on manually updating the protocol
+configuration settings, refer to the DB2 Universal Database
+Quick Beginnings manual.
+"
+
+MSPP_T_B_HELP
+"
+Communication Protocols
+
+The Administration Server provides services on the server to
+support client tools that automate the configuration of
+connections to DB2 databases.  It also enables you to
+administer DB2 from your server system or a remote client
+using the Control Center.  For example, you can start DB2
+on the server locally or from a remote client.
+
+To automate the configuration of connections to DB2
+databases and to enable administration of your server system
+from a remote client using the Control Center, you must
+configure the Administration Server for communications.
+
+DB2 Setup Utility automatically detects the communication
+protocols installed on the system, selects them, and
+generates default values for each of them.  You can modify
+these default selections and values by selecting Properties.
+
+You can deselect a protocol that you do not want the
+Administration Server to use.  However, you cannot specify a
+protocol that is not detected.
+
+For information on manually updating the protocol
+configuration settings, refer to the DB2 Universal Database
+Quick Beginnings manual.
+"
+
+MSPP_D_B_HELP
+"
+Communication Protocols
+
+The DB2 Data Links Manager Administrator is the user that
+administers the DB2 Data Links Manager.
+
+You can deselect a protocol that you do not want the
+DB2 Data Links Manager Administrator to use.  However, you
+cannot specify a protocol that is not detected.
+
+For information on manually updating the protocol
+configuration settings, refer to the DB2 Universal Database
+Quick Beginnings manual.
+"
+
+MSPPT_I_B_HELP
+"
+Communication Protocol - TCP/IP
+-------------------------------
+
+The TCP/IP service name and port number are used to register
+the DB2 Instance function to TCP/IP running on the server
+system.  Both must be entered and must be unique on the
+system.  The service name is the name associated with the
+port number.  It is used to update the database manager
+configuration file.  The port number designates the
+particular TCP/IP port for requests from DB2 Clients.
+"
+
+FCM_HELP
+"
+To enable FCM communications between database partition
+servers, you must create a service entry for each logical
+node in the /etc/services file.  The DB2 Instance you are
+going to create will only be set up with one physical node.
+However, you can change these settings later on.  For
+information on manually updating the FCM communications
+configuration settings, refer to the DB2 Universal Database
+Quick Beginnings manual.
+"
+
+MSPPT_T_B_HELP
+"
+Communication Protocol - TCP/IP
+-------------------------------
+
+The TCP/IP service name and port number are used to register
+the Administration Server function to TCP/IP running on the
+server system.  Both must be entered and must be unique on
+the system.  The service name is the name associated with
+the port number.  It is used to update the database manager
+configuration file.  The port number designates the
+particular TCP/IP port for requests from DB2 Clients.
+
+Port number, 523, has been registered by IBM for use by the
+DB2 Administration Server.  It is recommended that you use
+this value, unless it conflicts with the port being used by
+another TCP/IP application.
+"
+
+MSPPT_D_B_HELP
+"
+Communication Protocol - TCP/IP
+-------------------------------
+
+The TCP/IP service name and port number are used to register
+the DB2 Data Links Manager Administrator function to TCP/IP
+running on the server system.  Both must be entered and must
+be unique on the system.  The service name is the name
+associated with the port number.  It is used to update the
+database manager configuration file.
+"
+
+MSPPI_I_B_HELP
+"
+Communication Protocol - IPX/SPX
+--------------------------------
+
+Your DB2 server can be set up using the IPX/SPX protocol
+to support communications via Direct Addressing or File
+Server Addressing.  If you configure your DB2 server to
+support Direct Addressing, DB2 clients will only be able
+to communicate with your DB2 server using the Direct
+Addressing method.  If you set up your DB2 server to support
+File Server Addressing, DB2 clients will be able to
+communicate with your DB2 server using either the Direct or
+File Server Addressing methods.
+
+Direct Addressing
+
+DB2 Setup Utility provides a generated default value for the
+IPX Socket parameter.  To modify this value, type your own
+value in the appropriate field.
+
+DB2 uses the IPX Socket entry as the connection end point in
+a DB2 server's internetwork address.  It must be unique for
+all database server instances, and all IPX/SPX applications
+running on your system.
+
+DB2 has registered well known sockets with Novell in the
+range 0x879E to 0x87A1, for the customer's use.  If you run
+more than 4 instances on the server machine, you must
+prevent socket collisions for instances 5 and up by choosing
+a socket number that is not 0x0000, or in the dynamic socket
+range 0x4000 to 0x7FFF, or in the range 0x8000 to 0x9100
+(these are well known sockets that are registered to various
+applications).  The maximum value for this parameter is
+FFFF.
+
+File Server Addressing
+
+Select 'Register with file server' to enable your DB2 server
+to support File Server Addressing.  You will need to
+provide your own NetWare user ID and password.
+
+DB2 Setup Utility provides a generated default value for the
+IPX Socket, File Server, and Object Name parameters.  To
+modify a value, type your own value in the appropriate
+field.
+
+File Server
+
+The File Server parameter represents the name of the NetWare
+file server where the database server is registered.  This
+parameter must be entered in UPPERCASE.
+
+Object Name
+
+The Object Name parameter represents the database manager
+server instance on the NetWare file server, where the
+server's IPX/SPX address is stored and retrieved.  This
+parameter must be entered in UPPERCASE and must be unique on
+the NetWare file server and it is recommended that it be
+unique across the IPX/SPX network.
+
+IPX Socket
+
+DB2 uses the IPX Socket entry as the connection end point in
+a DB2 server's internetwork address.  It must be unique for
+all database server instances, and all IPX/SPX applications
+running on your system.
+
+DB2 has registered well known sockets with Novell in the
+range 0x879E to 0x87A1, for the customer's use.  If you run
+more than 4 instances on the server machine, you must
+prevent socket collisions for instances 5 and up by choosing
+a socket number that is not 0x0000, or in the dynamic socket
+range 0x4000 to 0x7FFF, or in the range 0x8000 to 0x9100
+(these are well known sockets that are registered to various
+applications).  The maximum value for this parameter is
+FFFF.
+
+NetWare User ID and NetWare Password
+
+The NetWare User ID and NetWare Password that you specify
+must already exist and are used to register the DB2 Object
+Name at a NetWare file server and must have supervisory or
+equivalent authority.
+
+Note:
+
+* Do not use the / \ : ; , * or ? characters in the File
+  Server or Object Name.
+"
+
+MSPPI_T_B_HELP
+"
+Communication Protocol - IPX/SPX
+--------------------------------
+
+Your DB2 server can be set up using the IPX/SPX protocol
+to support communications via Direct Addressing or File
+Server Addressing.  If you configure your DB2 server to
+support Direct Addressing, DB2 clients will only be able
+to communicate with your DB2 server using the Direct
+Addressing method.  If you set up your DB2 server to support
+File Server Addressing, DB2 clients will be able to
+communicate with your DB2 server using either the Direct or
+File Server Addressing methods.
+
+Direct Addressing
+
+DB2 Setup Utility provides a generated default value for the
+IPX Socket parameter.
+
+DB2 uses the IPX Socket entry as the connection end point in
+a DB2 server's internetwork address.  It must be unique for
+all database server instances, and all IPX/SPX applications
+running on your system.
+
+The IPX Socket is used to register the Administration Server
+function to IPX/SPX running on the server system.  The IPX
+Socket number 87A2 has been registered by IBM for use by
+DB2's Administration Server, you cannot override this value.
+
+File Server Addressing
+
+Select 'Register with file server' to enable your DB2 server
+to support File Server Addressing.  You will need to
+provide your own NetWare user ID and password.
+
+DB2 Setup Utility provides a generated default value for the
+IPX Socket, File Server, and Object Name parameters.  To
+modify a value, type your own value in the appropriate
+field.
+
+File Server
+
+The File Server parameter represents the name of the NetWare
+file server where the database server is registered.  This
+parameter must be entered in UPPERCASE.
+
+Object Name
+
+The Object Name parameter represents the database manager
+server instance on the NetWare file server, where the
+server's IPX/SPX address is stored and retrieved.  This
+parameter must be entered in UPPERCASE and must be unique on
+the NetWare file server and it is recommended that it be
+unique across the IPX/SPX network.
+
+IPX Socket
+
+DB2 uses the IPX Socket entry as the connection end point in
+a DB2 server's internetwork address.  It must be unique for
+all database server instances, and all IPX/SPX applications
+running on your system.
+
+The IPX Socket is used to register the Administration Server
+function to IPX/SPX running on the server system.  The IPX
+Socket number 87A2 has been registered by IBM for use by
+DB2's Administration Server, you cannot override this value.
+
+NetWare User ID and NetWare Password
+
+The NetWare User ID and NetWare Password that you specify
+must already exist and is used to register the DB2 Object
+Name at a NetWare file server and must have supervisory or
+equivalent authority.
+
+Note:
+
+* Do not use the / \ : ; , * or ? characters in the File
+  Server or Object Name.
+"
+
+DQP_B_HELP
+"
+The DB2 Query Patroller Agent and Server components have
+already been installed.  If you wish to configure your
+system as an Agent or Server, select the appropriate item.
+"
+
+QPA_B_HELP
+"
+The service name or port number must not conflict with 
+existing values in the TCP/IP services file.
+
+You may enter your own values in the service name and port
+number fields, or you can select Defaults to restore
+system-generated defaults for these values.
+"
+
+QPS_B_HELP
+"
+To set up DB2 Query Patroller Server, you must either
+use an existing DB2 Universal Database instance or 
+create a new instance during install. 
+
+If you use an existing DB2 instance, an iwm user 
+will be created (if necessary) and modified to belong to 
+the primary group of the instance owner.  On DB2 EEE, a 
+tablespace will be created if it does not already exist.
+
+If you create a new instance, an iwm user will be created
+(if necessary) and modified to belong to the primary group of
+the instance owner.  No database objects will be created.  
+Note that if you choose to create a new instance, 
+additional configuration will be required after 
+installation.  For more information refer to the Quick 
+Beginnings manual.
+"
+
+
+QPS_USE_B_HELP
+"
+
+DB2 EEE
+
+To use an existing DB2 EEE instance to install DB2 Query 
+Patroller Server, you must provide the following instance 
+information:
+
+  Node Group
+  Node Number
+  Database name
+  Tablespace name
+  Tablespace Path
+  Result Tablespace name
+
+You can also specify the DMS Tablespace size, if DMS is used.
+
+DB2 EE
+
+To use an existing DB2 EE instance to install DB2 Query Patroller
+Server, you must provide the following instance information: 
+
+  Database name
+  Tablespace name
+  Tablespace path
+  Result Tablespace name
+    
+  You can also specify the DMS Tablespace size, if DMS is used.
+"
+
+QPS_USE_CHK_B_HELP
+"
+The DB2 Setup Utility has found existing DB2 Query 
+Patroller objects in the IWM schema.
+
+If you select yes, the DB2 Setup Utility will remove only
+DB2 Query Patroller-specific objects from the IWM schema, 
+and then recreate these objects.  Other objects will 
+remain intact.
+
+If you select no, these DB2 Query Patroller objects will 
+remain intact and will be used by DB2 Query Patroller.
+"
+
+
+QPS_TCP_B_HELP
+"
+The TCP/IP service name and port number are used to register
+the Query Patroller Server function to TCP/IP running on
+the server system.  Both must be entered and both must be
+unique on the system.  The service name is the name
+associated with the port number.  It is used to update the
+database manager configuration file.
+"
+
+HELP_B_HELP
+"
+Using the DB2 Setup Utility Interface
+---------------------------------
+
+To place the cursor on an action item on the screen, use the
+Tab or arrow keys.  To invoke the selected action, use the
+Enter key.
+
+You can select those items on the screen that have brackets
+or parentheses next to them; you cannot select those that
+have colons next to them.
+
+Use the keyboard to navigate through the DB2 Setup Utility
+interface, select items, and perform actions.
+
+o To move from one list item to another, use the arrow keys.
+o To scroll, use the up and down arrow keys or the Page Up
+  and Page Down keys.
+o To move to the next item in a list, use the Tab key.
+o To select or deselect an item, position the cursor over
+  the item and press the spacebar.
+o To perform an action, position the cursor over it and
+  press Enter.
+o To accept current changes and go to the next level, press
+  F4 or F8.
+o To discard current changes and go back one level, press
+  F3 or F10.
+o To view context-specific help information, press F1.
+"
+
+MC_DWA_S_B_HELP
+"
+Two daemons are required to setup communication 
+between the Data Warehouse Server and Agent.  
+The port name and port number values you supply must
+be the same across you warehouse environment. 
+"
+
+CDB_B_HELP
+"
+The Data Warehouse control database contains
+meta data inforation for the DB2 Data Warehouse 
+environment.
+
+Select 'Set Up DB2 Control Database' if you want to 
+set up a control database for this particular instance.
+"
+
+CDB_S_B_HELP
+"
+Enter the Control Database name.  A Control Database will 
+only be created if one does not already exist.
+
+The name you provide must conform to system and DB2 naming 
+rules.
+"
+
+DWA_B_HELP
+"
+Select 'Set Up Warehouse Agent' to setup a DB2 Data 
+Warehouse Agent.
+
+A DB2 Data Warehouse agent manages the flow of data between 
+warehouse sources and warehouse targets.  Warehouse agents use
+Open Database Connectivity (ODBC) drivers or DB2 CLI to 
+communicate with different databases.  Several warehouse 
+agents can handle the transfer of data between warehouse 
+sources and warehouse targets.
+"
+
+DWA_S_B_HELP
+"
+For English, accept the default DB2 codepage value.  For other 
+codepage values, refer to the Quick Beginnings manual.
+" 
+
+DWA_S_TDB_B_HELP
+"
+To catalog a remote target database, select 'Catalog Target 
+Database for DB2 Warehouse Agent'.  
+"
+
+DWA_S_TDB_S_B_HELP
+"
+Provide the Host Name, Node Name, TCP/IP Service Name and 
+Target Database Name for the remote target database.
+"
+
+DJ_B_HELP
+"
+DB2 Distributed Join for DB2 is a wrapper module that 
+enables your DB2 EE or EEE server to access DB2 family 
+data sources.
+"
+
+
+DJO_B_HELP
+"
+Distributed Join for Oracle Data Sources consists of 
+wrapper modules that enable your DB2 EE or EEE federated 
+server to access data stored in Oracle databases.  Two 
+different Oracle wrapper modules are included, one for
+use with SQL*Net Version 1 and Version 2 client software,
+and one for use with Net8 client software.
+"
+
+DJO_S_B_HELP
+"
+If the Oracle client is installed, specify the 
+installation path.
+"
+
+HELP_MS_E
+"
+Set up an Existing DB2 Instance
+
+To set up an existing DB2 Instance, select 'Set up an 
+existing DB2 Instance'.
+"
+
+HELP_USE
+"
+Provide the name of the DB2 instance you want to setup. 
+This must be an existing DB2 instance.
+"
+
+QPA_HELP
+"
+To setup a DB2 Query Patroller agent, select 'Setup DB2 
+Query Patroller Agent'.  On DB2 EEE, a DB2 Query Patroller 
+agent can run on one or more nodes including the node 
+where the DB2 Query Patroller server resides.
+" 
+
+HELP_DLFM_BACKUPDIR
+"
+Data Links File Manager (DFLM) Backup Directory
+
+For the Data Links File Manager (DFLM) backup directory, 
+enter a path for your desired locale. 
+
+The path you provide can be the full path for the DLFM 
+backup directory, in which case the path should start 
+with a forward slash '/'.
+
+If the path is relative to DLFM instance directory, you 
+a forward slash '/' is not needed.
+"
+
+HELP_DB2DFSC
+"
+DB2 DFS Client Enabler - enables the DFS client  
+so that DFS files which have been linked in DATALINK
+columns created with the READ PERMISSION DB option
+can be accessed.  It validates the embedded access control
+token for such files.
+"
+
+OLAP_B_HELP
+"
+To set up this instance as the On-line Analytical Processing 
+(OLAP) instance, select  'Set up as OLAP Instance', and select 
+'OK'.
+"
+
+DLNK_B_HELP
+"
+Select a setup option for DB2 Data Links Administrator
+and select OK.
+
+Only select DFS support if you are installing into a DCE 
+environment. DFS server support and DFS client support may 
+be placed on separate DCE nodes.
+"
+
+DLNK_S_DFSS_B_HELP
+"
+Provide a service name and port number or accept the default 
+values for DB2 Data Links Manager Administrator - DFS Server 
+Support.
+
+Select Default to restore the default settings.
+"
+
+DLNK_S_DFSC_B_HELP
+"
+Provide values for service name, port number, node alias, 
+and remote server.  
+
+The service name and port number you provide for the 
+Data Links File Manager - DFS client support must match
+the service name and port number you provided for Data 
+Links File Manager - DFS server support. 
+
+Select Default to restore the default settings.  
+"
+
+WARNING_DB2CTLSRV
+"
+DB2 Control Server selected.
+
+Explanation:  You have selected to install the DB2 Control
+Server component.  Note that the installer will perform
+no setup for this component, and that further configuration
+will be required.
+
+Refer to the DB2 UDB Administering Satellites Guide and
+Reference for further details.
+
+User Response:
+
+o   Press OK to continue, or
+
+o   Press Cancel to go back.
+"
+
+N_TERMINATE_SUCCESS
+"Completed successfully."
+
+N_TERMINATE_FAILURE
+"(!) Failed."
+
+N_TERMINATE_ERROR
+"(!) Completed with errors."
+
+N_TERMINATE_BY_USER
+"(!) Terminated by user."
+

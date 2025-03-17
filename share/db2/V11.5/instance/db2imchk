@@ -1,0 +1,150 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2imchk
+#
+# FUNCTION: Sets up the environment to execute the db2ckupgrade command
+#           Verifies that each cataloged database is upgradable
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+NEWDB2DIR="${DB2DIR?}"
+INSTNAME=$1
+INSTHOME=$2
+LOGFILE=$3
+SKIPLOADPENDINGCHK=$4
+ONLINE_PREPARE_SQLLIB_VER=$5
+ONLINE_COMMIT=$6
+
+ProgName=`basename $0`            # Program name
+TmpFile="/tmp/${ProgName?}.tmp.$$"     # Temporary log file
+
+# Initialize temporary log file
+rm -f ${TmpFile?}
+echo "" >> ${TmpFile?}
+echo "     Program name = ${ProgName?}" > ${TmpFile?}
+echo "     Instance Name = ${INSTNAME?}" >> ${TmpFile?}
+echo "     Home dir = ${INSTHOME?}" >> ${TmpFile?}
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+# Copy to log file, remove temporary log file
+copy_log()
+{
+    set ${setopts?}
+    rm -f ${LOGFILE?}
+    cp ${TmpFile?} ${LOGFILE?}
+    rm -f ${TmpFile?}
+}
+
+# exit function
+exit_db2imchk()
+{
+    set ${setopts?}
+    exitcode=${1:-1}     # Exit code, default 1
+    echo "     Exit code = ${exitcode?}" >> ${TmpFile?}
+    echo "" >> ${TmpFile?}
+    copy_log
+    if [ ! -s ${INSTHOME?}/upgrade.log ]; then
+        rm -f ${INSTHOME?}/upgrade.log
+    fi
+    exit ${exitcode?}
+}
+
+# Sets the environment variables for the instance
+set_instenv()
+{
+    set ${setopts?}
+    # Set DB2INSTANCE.
+    DB2INSTANCE=${INSTNAME?}
+    export DB2INSTANCE
+
+    # Append the DB2 directories to the PATH.
+    PATH=${PATH}:${INSTHOME?}/sqllib/bin:${INSTHOME?}/sqllib/adm
+    PATH=${PATH}:${INSTHOME?}/sqllib/misc
+    export PATH
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+trap "exit_db2imchk 1" 1 2 3 15
+
+# Set the instance environment
+set_instenv
+
+#---------------------------------------------------------------------
+# Check all cataloged local databases for conditions that would
+# prevent their successful upgrade.
+#---------------------------------------------------------------------
+if [ ${SKIPLOADPENDINGCHK?} -eq 0 ]; then
+   ${NEWDB2DIR?}/bin/db2ckupgrade -m -e -b -l ${INSTHOME?}/upgrade.log 
+ elif [ ${ONLINE_PREPARE_SQLLIB_VER?} -eq 0 ]; then 
+   ${NEWDB2DIR?}/bin/db2ckupgrade -m -e -s -l ${INSTHOME?}/upgrade.log
+ elif [ ${ONLINE_COMMIT?} -eq 0 ] ; then 
+   ${NEWDB2DIR?}/bin/db2ckupgrade -m -e -c -l ${INSTHOME?}/upgrade.log
+ else
+   ${NEWDB2DIR?}/bin/db2ckupgrade -m -e -l ${INSTHOME?}/upgrade.log 
+ fi
+exit_db2imchk $?
+

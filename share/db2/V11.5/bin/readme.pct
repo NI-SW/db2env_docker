@@ -1,0 +1,406 @@
+Protocol Communications Tester (Protocol Tester)
+================================================
+
+Introduction
+------------
+
+The protocol tester is designed to be used as an aid to ensuring that a certain
+LAN protocol is functional at the protocol level, and that 2 endpoints can
+communicate with each other via that LAN protocol.  The tool can, therefore,
+help solve workstation (endpoint) protocol configuration-type problems as well
+as help to pinpoint problems that may be occurring at any of the communication
+protocol steps along the way to successful communications.  These protocol
+steps will include endpoint to endpoint connect followed by send and
+receive operations with data verification and finally disconnect.
+
+The protocols that are supported by this tool are;
+1). NetBIOS
+2). TCPIP
+3). IPXSPX
+
+Please note that this Protocol Communications Tester Tool operates totally
+separate from any DB2 functions, applications or tools.  This is a standalone
+test tool.
+
+
+
+Operating System Vs Protocols support Chart
+-------------------------------------------
+
+The following chart shows which Operating System platforms will support the
+tool and for which protocol/s.  It should be noted that the protocol tester
+is NOT confined to its own Operating system (i.e. OS2 to OS2, or AIX to AIX)
+but can inter-operate fully with the same protocol on any supported operating
+system platform.
+
+
++--------------------+-----------------+------------------+------------------+
+|            \ Proto | TCPIP           |  IPXSPX          |  NetBIOS         |
+|OS Platform  \ cols |                 |                  |                  |
++--------------------+-----------------+------------------+------------------|
++--------------------+-----------------+------------------+------------------|
+|   OS2              | Yes  (pctt.exe) |  Yes  (pcti.exe) |  Yes  (pctn.exe) |
++--------------------+-----------------+------------------+------------------|
+|   Windows NT       | Yes  (pctt.exe) |  Yes  (pcti.exe) |  Yes  (pctn.exe) |
++--------------------+-----------------+------------------+------------------|
+|   Windows 95       | Yes  (pctt.exe) |  Yes  (pcti.exe) |  Yes  (pctn.exe) |
++--------------------+-----------------+------------------+------------------|
+|   AIX              | Yes  (pctt)     |  Yes  (pcti)     |  No              |
++--------------------+-----------------+------------------+------------------|
+|   HP               | Yes  (pctt)     |  Yes  (pcti)     |  No              |
++--------------------+-----------------+------------------+------------------|
+|   SUN              | Yes  (pctt)     |  Yes  (pcti)     |  No              |
++--------------------+-----------------+------------------+------------------|
+|   SCO              | Yes  (pctt)     |  Yes  (pcti)     |  No              |
++--------------------+-----------------+------------------+------------------+
+
+
+
+Motivation
+----------
+
+LAN communication protocols are the backbone of client/server applications.
+The communications protocols are usually either installed as part of the
+Operating System or as a separate package.  But, in either case, the
+protocol will become an integral part of the client/server application.  The
+application will depend on the protocol being installed, configured and
+operational before the application can utilise the communication mechanism.
+
+Often when LAN communications break down or have not even worked initially,
+it is difficult to determine where the fault lies (i.e. in the communication
+protocol installation/configuration or with the client/server application).
+The protocol tester was designed to help decide whether the problem is with
+the application or with the protocol itself.  In doing only this, the problem
+is reduced and proper focus can be placed in the appropriate area.  However,
+in many cases the protocol tester can further be used to help diagnose the
+actual problem.
+
+The protocol tester can also be used as a sanity tool.  It can prove the
+LAN protocol communication operation between 2 endpoints before the actual
+application communication is attempted.  This will allow the application user
+to build up a certain level of confidence that will no doubt be an aid to the
+application set-up or the possible problem determination that may follow.
+
+The protocol tester can often provide valuable information to the user about
+the protocol configuration parameters or protocol resources etc.
+
+The protocol tester is designed to use the same protocol commands that DB2
+client/server will use and to issue the commands in similar sequence to that
+of DB2.
+
+
+The Big Picture
+---------------
+
+The protocol tester is a client/server application of the most basic nature.
+It was designed to be as "turnkey" as possible to be easy to use as a sanity
+tool, and yet, it can offer many options which will enable the more experienced
+user to make adjustments to the protocol test, modify the set-up or to request
+more detail of the entire communication to suit his/her needs.
+
+One executable application program contains both the client and the server
+end so that it is easy to move the protocol tester from one workstation to
+another as needed.  Everything that you will need is contained within the one
+binary.
+
+
+           Client End                                   Server End
+     +----------+----------+                      +----------+----------+
+     |  PCTx    |          |                      |          |  PCTx    |
+     | Protocol |LAN       +----------------------+ LAN      | Protocol |
+     | Tester   |Protocol          L A N            Protocol | Tester   |
+     | App      |Subsystem +----------------------+ Subsystem| App      |
+     |          |          |                      |          |          |
+     +----------+----------+                      +----------+----------+
+
+
+
+Installation:
+------------
+The protocol tester is shipped with all DB2 packages.
+Since the protocol tester is fully contained within the one single executable,
+no further installation steps are required.
+
+The PCTx executable can be found in the "/sqllib/bin" directory.
+
+
+Usage:
+-----
+
+      < pct[n|t|i] mode [options [options]] >
+         where...
+           mode
+             c  - client side (caller)                        (default)
+             s  - server side (listener)
+           options
+             /b size   - buffer size                          (500)
+             /x number - number of connects                   (1)
+             /l number - number of send/rec loop iterations   (1)
+             /r  - view local TCPIP hostname, hostaddr, ipaddr
+             /r  - view local IPXSPX address
+             /r number - view NetBIOS resources for adapter # (0)
+             /k  - keep connection/s up until user signal     (OFF)
+             /t  - trace ON                                   (OFF)
+             /vx - send/recv/verify service                   (default)
+             /vc - Connect only service
+             /ed - display error code desc from decimal i/p   (default)
+             /ex - display error code desc  from hex i/p
+             /ga - generate pct.ini file for all protocols    (default)
+             /gn - generate pct.ini file for NetBIOS only
+             /gt - generate pct.ini file for TCPIP only
+             /gi - generate pct.ini file for IPXSPX only
+             /? or /h - help
+       Note: see protocol 'pct.ini' file for protocol specific options.
+       Note: '/' or '-' can be used as an option prefix.
+
+
+
+
+Options Explained:
+-----------------
+
+   /b size   - buffer size                          (500)
+             - allows the user to modify the communication buffer size.  It
+               is not necessary to have the buffer size the same on both
+               client and server ends.
+               default: 500 bytes
+
+   /x number - number of connects                   (1)
+             - allows the user to modify the number of connections that will
+               be attempted.  The server end must have an equal or greater
+               number of connections specified than the client end for a
+               client test to be successful.  Multiple client ends could be
+               set-up to connect to a single server end but remember that the
+               number of connects specified at the server dictates the
+               number of connections, in total, that must be achieved before
+               the server end will indicate success.
+             NOTE for NetBIOS: if more than 1 client is connecting to the
+                               same server it will be necessary for each
+                               client to have different ClientNames.  This
+                               can be accomplished by editing the pct.ini
+                               file (see NetBIOS section and /g option).
+               default: 1 connection
+
+   /l number - number of send/rec loop iterations   (1)
+             - allows the user to specify the number of times the transaction
+               will be iterated.  Since the default transaction is
+               "send/recv/verify"... this entire action would be iterated
+               by the number specified.
+             NOTE: the number of iterations will have to be the same at both
+                   ends of the connection for the test to be success.
+
+               default: 1 iteration
+
+   /r number - view NetBIOS resources for adapter # (0)
+             - allows the user to query the amount of NetBIOS resources that
+               are free at this instant for the adapter number specified.
+               NetBIOS resources that are displayed are... sessions,
+               ncbs (commands) and names.  This is handy when trying to
+               determine the protocol.ini parameter settings for the NetBIOS
+               resources.  NetBIOS only option.
+             - the user can query any adapter number to determine whether or
+               not the adapter is configured.
+               default: adapter 0
+   /r        - view local TCPIP hostname, host address and ip address
+   /r        - view local IPXSPX address (net.node)
+
+   /k  - keep connection/s up until user signal     (OFF)
+             - allows the user to modify the protocol test so that all of the
+               connections that are successfully made are kept (remain
+               connected) until the user chooses to drop the connections.
+               The default action is for the connections to drop immediately
+               after the service transaction is completed.
+             - the user signal is press the < ENTER > key.
+               default: OFF  (connections are not kept)
+
+   /t  - trace ON                                   (OFF)
+             - allows the user to trace in detail the actions and results of
+               each protocol command issued to the protocol interface.
+             - trace will be written to "stdout" and can therefore be piped
+               to a file.
+               default: OFF (no tracing)
+
+   /vx - send/recv/verify service                   (default)
+   /vc - Connect only service
+             - allows the user to select which transaction to be used.
+             - "connect only" established the connection only... no sending
+               and receiving of any data.
+             - "send/recv/verify" will establish the connection and then
+               send the entire communication buffer (pre-filled data) and then
+               receive a different communications buffer (also pre-filled).
+               The contents of the buffers will be verified at both ends (this
+               can be done because the ends know exactly what data to expect in
+               the buffers sent from the partner end even though both buffers
+               are different).
+               default: send/recv/verify service
+
+   /ed - display error code desc from decimal i/p   (default)
+   /ex - display error code desc from hex i/p
+             - allows the user to query the description of a numeric error
+               code received from a communication error.  The user could
+               enter the numeric in decimal or hex format.
+               example: < pctt /ed 10063 >
+               example: < pctn /ex 0a >
+               default: (if '/e' only is specified)
+                        display error code description from decimal input
+
+   /ga - generate pct.ini file for all protocols    (default)
+   /gn - generate pct.ini file for NetBIOS only
+   /gt - generate pct.ini file for TCPIP only
+   /gi - generate pct.ini file for IPXSPX only
+             - allows the user to generate (create) the protocol dependent
+               file (pct.ini) to be used for specifying any of the protocol
+               dependent parameters (see NetBIOS, TCPIP & IPXSPX sections
+               below for more information about using the pct.ini file).
+             - '/gn' will generate a pct.ini file containing NetBIOS
+               parameters only.
+             - '/gt' will generate a pct.ini file containing TCPIP
+               parameters only.
+             - '/gi' will generate a pct.ini file containing IPXSPX
+               parameters only.
+             - '/ga' will generate a pct.ini file containing both TCPIP
+               and NetBIOS parameters.
+               default: (if '/g' only is specified)
+                        generate pct.ini file for all protocols
+
+   /? or /h - help
+             - displays the usage help text.
+
+
+
+
+
+NetBIOS:
+-------
+The NetBIOS protocol tester can be operated "turnkey" (without even having to
+specify NetBIOS names) by simply entering the following at the communication
+ends.  Client and server ends could exist on the same workstation or on
+separate workstations.  The server end must be active before the client end
+or else the client will fail indicating that the server was not found.
+
+   Server end    < pctn s >
+   Client end    < pctn c >
+
+The NetBIOS protocol tester uses its own unique default NetBIOS names to
+establish the connection.  These names and other NetBIOS parameters can be
+modified by editing the pct.ini file and modifying or entering information
+after the '=' sign.  The parameter names should not be modified.  The default
+file can always be re-created by deleting the old pct.ini file and then
+issuing < pctn /ga > or < pctn /gn >.
+
+   pct.ini
+                  [NETBIOS]
+                  AdapterNumber = 0
+                  ClientName = DB2PCTCLIENT
+                  ServerName = DB2PCTSERVER
+                  Sessions = 1
+                  Commands = 1
+                  Names = 1
+
+NOTE: Windows NT NetBIOS users
+        - NT NetBIOS installations normally result in 3 adapter numbers being
+          assigned to the same physical adapter. One of the assignments is
+          labelled "Nbf" or non-emulated, Native NetBIOS.  The adapter number
+          associated with "Nbf" is the number that you should always use
+          unless you really want to use emulated NetBIOS.
+
+NOTE: Windows 95 NetBIOS users
+        - 95 NetBIOS installations normally result in 2 adapter numbers being
+          assigned.  One of the assignments is non-emulated Native NetBIOS but
+          it is difficult to tell which is the Native NetBIOS adapter because
+          Microsoft did not provide any means to view or change the assignment.
+        - with < PCTN /r n > you will be able to discover which 2 adapter
+          numbers are active but you need to guess at which one is the Native
+          NetBIOS adapter.  However, it appears that if you make the NetBIOS
+          service the default service for the adapter then Native NetBIOS will
+          be assigned to adapter 0.  The point is that LAN communications can
+          only occur if both ends are Native NetBIOS or if both ends are of the
+          same emulation.
+
+
+
+TCPIP:
+-----
+The TCPIP protocol tester can be operated "turnkey" (without even having to
+specify a hostname) only if both ends exist on the same host, however,
+client and server ends can also exist on separate workstations by simply
+entering the servers "hostname" or "IPAddress" into the pct.ini file of the
+client workstation.  To determine the hostname and IPAddress of any TCPIP
+workstation just use enter the following command  < pctt -r >.
+
+The server end must be active before the client end or else the client will
+fail indicating that the connection was refused.
+
+   Server end    < pctt s >
+   Client end    < pctt c >
+
+The TCPIP protocol tester uses the hostname of the current workstation as
+the server hostname when establishing the connection unless the user has
+entered a "ServerHostName" value in the pct.ini file.
+The hostname and other TCPIP parameters can be modified by editing the
+pct.ini file.
+It should be noted that the user only needs to enter a value for the
+"ServerHostName" or "ServerIPAddress" in order to achieve a connection.
+The same holds true for the "ServiceName", "ServerPort" pair.  Either one
+alone will suffice.
+
+
+The following shows the parameters for TCPIP that will be found in the
+pct.ini file.  These parameter values can be modified at the users convenience
+to attempt connection to some other host.  The parameter values can be
+modified by editing the pct.ini file and modifying or entering information
+after the '=' sign.  The parameter names should not be modified.  The default
+file can always be re-created by deleting the old pct.ini file and then
+issuing < pctt /ga > or < pctt /gt >.
+
+   pct.ini
+                  [TCPIP]
+                  ServerHostName =
+                  ServerHostAddress =
+                  ServerIPAddress =
+                  ServiceName =
+                  ServerPort = 49433
+
+
+IPXSPX:
+-----
+The IPXSPX protocol tester can be operated "turnkey" (without even having to
+specify a hostname) only if both ends exist on the same host, however,
+client and server ends can also exist on separate workstations by simply
+entering the servers "net" and "node" address into the pct.ini file of the
+client workstation.  To determine the "net" & "node" address of any IPXSPX
+workstation just use enter the following command  < pcti -r >.
+
+The server end must be active before the client end or else the client will
+fail indicating that the connection was refused.
+
+   Server end    < pcti s >
+   Client end    < pcti c >
+
+The IPXSPX protocol tester uses the net.node address of the current workstation
+as the server net.node address when establishing the connection unless the user
+has entered a ServerNet and ServerNode values in the pct.ini file.
+The values for these IPXSPX parameters can be modified by editing the
+pct.ini file.
+It should be noted that the user needs to enter both ServerNet and
+ServerNode values when specifying a particular server.
+The socket number that is supplied as a default socket number is a socket
+number reserved for this purpose and there should not, therefore, be any
+conflict with other applications.  However, this socket value could be
+changed to any other value of interest when running a protocol test.
+
+
+The following shows the parameters for IPXSPX that will be found in the
+pct.ini file.  These parameter values can be modified at the users convenience
+to attempt connection to some other host.  The parameter values can be
+modified by editing the pct.ini file and modifying or entering information
+after the '=' sign.  The parameter names should not be modified.  The default
+file can always be re-created by deleting the old pct.ini file and then
+issuing < pcti /ga > or < pcti /gi >.
+
+   pct.ini
+                  [IPXSPX]
+                  ServerNet =
+                  ServerNode =
+                  ServerSocket = 87a3
+

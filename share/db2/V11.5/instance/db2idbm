@@ -1,0 +1,302 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2idbm
+#
+# FUNCTION: Initializes all required parameters of the database manager
+#           configuration file during instance creation/migration.
+#
+#############################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+InstName=$1          # Instance Name
+InstHome=$2          # Home dir for the instance
+SysAdmGrp=$3         # Primary group of the instance userid
+InstType=$4          # Instance type
+AuthName=$5          # Authentication type
+LogFile=$6           # Name of the log file to create
+
+# Check that the number of input parameters are OK
+if [ $# -ne 6 ] ; then 
+    exit 20
+fi
+
+# Variables to identify the instance type
+ITYPE_EEE=1           # Instance type for EEE instance
+ITYPE_DAS=2           # Instance type for DAS
+ITYPE_SRV=3           # Instance type for server instance
+ITYPE_CLN=4           # Instance type for client instance
+ITYPE_DLN=5           # Instance type for datalinker instance
+ITYPE_PER=6           # Instance type for standalone requestor (PE)
+ITYPE_SD=7            # Instance type for Shared Database (SD)
+
+ProgName=`basename $0`         # Program name
+TmpFile="/tmp/${ProgName?}.tmp.$$"     # Temporary log file
+
+# Initialize temporary log file
+rm -f ${TmpFile?}
+touch ${TmpFile?}
+echo "       Program name = ${ProgName?}" >> ${TmpFile?}
+echo "Instance home dir = ${InstHome?},   Sysadm group = ${SysAdmGrp?}" >> ${TmpFile?}
+echo "Instance type = ${InstType?},  Auth type = ${AuthName?}" >> ${TmpFile?}
+echo "" >> ${TmpFile?}
+
+# Copy to log file, remove temporary log file
+copy_log()
+{
+    set ${setopts?}
+    rm -f ${LogFile?}
+    cp ${TmpFile?} ${LogFile?}
+    rm -f ${TmpFile?}
+}
+
+# Program exit
+exit_db2idbm()
+{
+    set ${setopts?}
+    exitcode=${1:-1}
+    copy_log
+    exit ${exitcode?}
+}
+
+# Sets the environment variables for the instance
+set_instenv()
+{
+    set ${setopts?}
+    # Set DB2INSTANCE.
+    DB2INSTANCE=${InstName?}
+    export DB2INSTANCE
+
+    # Append the DB2 directories to the PATH.
+    PATH=${PATH}:${InstHome?}/sqllib/bin:${InstHome?}/sqllib/adm
+    PATH=${PATH}:${InstHome?}/sqllib/misc
+    export PATH
+}
+
+trap "exit_db2idbm 1" 1 2 3 15
+
+#-----------------------------------------------------------------------
+# Set the environment for the instance we are running as.
+#-----------------------------------------------------------------------
+set_instenv
+
+#-----------------------------------------------------------------------
+# Update the database manager configuration file to set SYSADM_GROUP to
+# the specified group. Check for SQL6031N message.
+#-----------------------------------------------------------------------
+errmsg=`db2 update database manager configuration using SYSADM_GROUP ${SysAdmGrp?} 2>&1 `
+errcode=$?
+echo "${errmsg?}" >> ${TmpFile?}
+errnum=`echo ${errmsg?} | sed -n '$ p' | awk '{print $1}'`
+
+if [ ${errcode?} -ne 0 ]; then
+    echo "Update DBM cfg SYSADM_GROUP errcode = ${errcode?}" >> ${TmpFile?}
+    if [ "X${errnum?}" = "XSQL6031N" ]; then
+        # Assumption: The reason code for SQL6031N is 11.
+        echo " >>>>> Error message = ${errmsg?} <<<<< " >> ${TmpFile?}
+        exit_db2idbm 2
+    else
+        exit_db2idbm 1
+    fi
+fi
+
+#-----------------------------------------------------------------------
+# If not a client instance then set CPUSPEED and AUTHENTICATION.
+#-----------------------------------------------------------------------
+if [ ${InstType?} -ne ${ITYPE_CLN?} ]; then
+
+    #---------------------------------------------------------------------
+    # Update the database manager configuration file to set AUTHENTICATION.
+    #---------------------------------------------------------------------
+    db2 update database manager configuration \
+        using AUTHENTICATION ${AuthName?} 2>&1 >> ${TmpFile?}
+    errcode=$?
+    if [ ${errcode?} -ne 0 ]; then
+        echo "Update DBM cfg AUTHENTICATION errcode = ${errcode?}" \
+            >> ${TmpFile?}
+        exit_db2idbm 1
+    fi
+
+    #---------------------------------------------------------------------
+    # Set the CPUSPEED database manager configuration parameter by
+    # forcing the execution of the CPUSPEED program.
+    #---------------------------------------------------------------------
+    db2 update database manager configuration using CPUSPEED -1 2>&1 \
+        >> ${TmpFile?}
+    errcode=$?
+    if [ ${errcode?} -ne 0 ]; then
+        echo "Update DBM cfg CPUSPEED errcode = ${errcode?}" \
+            >> ${TmpFile?}
+    fi
+fi
+
+#-----------------------------------------------------------------------
+# If it's a EEE instance then set COMM_BANDWIDTH
+#-----------------------------------------------------------------------
+if [ ${InstType?} -eq ${ITYPE_EEE?} ]; then
+    db2 update database manager configuration using COMM_BANDWIDTH -1 2>&1 \
+        >> ${TmpFile?}
+    errcode=$?
+    if [ ${errcode?} -ne 0 ]; then
+        echo "Update DBM cfg COMM_BANDWIDTH errcode = ${errcode?}" \
+            >> ${TmpFile?}
+    fi
+fi
+
+#-----------------------------------------------------------------------
+# If not a client instance then set spm_name
+#-----------------------------------------------------------------------
+if [ ${InstType?} -ne ${ITYPE_CLN?} ]; then
+    CURHOST=`hostname`
+    if [ "X${CURHOST?}" != "X" ]; then
+        NUMINST=`${DB2DIR?}/bin/db2greg -dump | grep -v '^V' | \
+                 awk '$1 == "I" && $2 == "DB2"{n++} END{print n-1}' FS=,`
+        if [ ${NUMINST?} -eq 0 ]; then
+            CURHOST=`echo ${CURHOST?} | \
+                    sed 's/^\(........\).*$/\1/'`
+            NUMINST=""
+        elif [ ${NUMINST?} -lt 10 ]; then
+            CURHOST=`echo ${CURHOST?} | \
+                    sed 's/^\(.......\).*$/\1/'`
+        elif [ ${NUMINST?} -lt 100 ]; then
+            CURHOST=`echo ${CURHOST?} | \
+                    sed 's/^\(......\).*$/\1/'`
+        else
+            CURHOST=`echo ${CURHOST?} | \
+                    sed 's/^\(.....\).*$/\1/'`
+        fi
+        SPMNAME="${CURHOST?}${NUMINST?}"
+        SPMNAME=`echo ${SPMNAME?} | \
+                sed 's/^\(........\).*$/\1/' | \
+                    sed 's/[^0-9A-Za-z$#@_]/_/g'`
+
+            echo ${SPMNAME?} | grep '^[^A-Za-z\$#@]' > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                SPMNAME=`echo ${SPMNAME?} | \
+                    sed 's/^./d/'`
+            fi
+
+        db2 update database manager configuration using SPM_NAME ${SPMNAME?} 2>&1 >> ${TmpFile?}
+        errcode=$?
+        if [ ${errcode?} -ne 0 ]; then
+            echo "Update DBM cfg SPM_NAME errcode = ${errcode?}" \
+            >> ${TmpFile?}
+        fi
+    fi
+fi
+
+#-----------------------------------------------------------------------
+# Update the database manager configuration file to set JDK_PATH
+# to the installation path of the Java that DB2 ships with.
+# Note: if DB2 has not tested Java for a platform, that JDKPATH will
+# be blank.  This is desired.
+#-----------------------------------------------------------------------
+JDKPATH=`${InstHome?}/sqllib/bin/db2jdkp`
+db2 "update database manager configuration using JDK_PATH '${JDKPATH?}'" 2>&1 \
+         >> ${TmpFile?}
+errcode=$?
+if [ ${errcode?} -ne 0 ]; then
+    echo "Update DBM cfg JDK_PATH errcode = ${errcode?}" \
+        >> ${TmpFile?}
+    exit_db2idbm 1
+fi
+
+if [ ${InstType?} -ne ${ITYPE_CLN?} ]; then
+   #-----------------------------------------------------------------------
+   # Update the database manager configuration file to set DIAGPATH
+   # to the home directory of the instance on the server side only
+   #-----------------------------------------------------------------------
+   if [ -f "${InstHome?}/sqllib/db2nodes.cfg" ]; then
+   db2 update database manager configuration using DIAGPATH '"$m"' 2>&1 >> ${TmpFile?}
+   else
+   db2 update database manager configuration using DIAGPATH \
+       ${InstHome?}/sqllib/db2dump 2>&1 >> ${TmpFile?}
+   fi
+   errcode=$?
+   if [ ${errcode?} -ne 0 ]; then
+       echo "Update DBM cfg DIAGPATH errcode = ${errcode?}" \
+           >> ${TmpFile?}
+       exit_db2idbm 1
+   fi
+fi
+
+#-----------------------------------------------------------------------
+# Update the database manager configuration file to set DISCOVER_COMM.
+#-----------------------------------------------------------------------
+db2 update database manager configuration using DISCOVER_COMM tcpip 2>&1 \
+    >> ${TmpFile?}
+errcode=$?
+if [ ${errcode?} -ne 0 ]; then
+    echo "Update DBM cfg DISCOVER_COMM errcode = ${errcode?}" \
+        >> ${TmpFile?}
+    exit_db2idbm 1
+fi
+#----------------------------------------------------------------------
+# Terminate the command line processor so that the next CLP call will
+# pick up the new parameters.
+#-----------------------------------------------------------------------
+db2 terminate 2>&1 >> ${TmpFile?}
+errcode=$?
+if [ ${errcode?} -ne 0 ]; then
+    echo "db2 terminate errcode = ${errcode?}" >> ${TmpFile?}
+    exit_db2idbm 1
+fi
+
+#-----------------------------------------------------------------------
+# Successful exit.
+#-----------------------------------------------------------------------
+exit_db2idbm 0
+

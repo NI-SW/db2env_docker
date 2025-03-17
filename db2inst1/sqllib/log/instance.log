@@ -1,0 +1,9 @@
+------------------------------------------------------------
+Date::07/31/24 Wednesday 03:29:15 UTC
+Host::890dfb5c2ba0
+Command::/opt/ibm/db2/V11.5/instance/db2icrt_local -a server -d -s client db2inst1
+Insttype::4
+Level::VRMF=11.5.0.0,Interim=0,SpecialInstall=0,SpecialBuild=,bld_level=s1906101300
+Message::DBI1070I Program db2icrt_local completed successfully.
+ReturnCode::0
+------------------------------------------------------------

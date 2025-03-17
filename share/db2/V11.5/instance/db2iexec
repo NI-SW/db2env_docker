@@ -1,0 +1,271 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2iexec
+#
+# FUNCTION: db2iexec - execute commands as instance user
+#
+# USAGE: db2iexec [-n] [-o <loglife:errfile>] [-v envvar=value] <instance> <command>
+#         -n    
+#            Show db2diag.log on failure
+#         -o logfile:errfile
+#            Specify the logfile and error file (STDOUT and STDERR)
+#         -v envvar=value
+#             Specify extra environment variables before running the command
+#
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+PROGNAME=`basename $0`       # Program name
+
+# show db2diag.log by default
+SHOWLOGFLAG="0"        
+HANDLE_OUTPUT="1"
+STDOUT=""
+STDERR=""
+ENVVARS=""
+FORMATTED_VARS=""
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+#--------------------------------------------------------------------------
+# Name          - set_stdout_stderr
+# Function      - Set values for STDOUT and STDERR based on the value of
+#                 $STDOUTERR. The value of $STDOUT should be in the form
+#                 <stdout>:<stderr>.
+#                 eg: STDOUTERR="/tmp/outfile:/tmp/errfile"
+#--------------------------------------------------------------------------
+set_stdout_stderr()
+{
+    HANDLE_OUTPUT="0"
+    STDOUT=`echo ${STDOUTERR?} | cut -d":" -f1`
+    if [ $? -ne 0 ]; then
+       echo "Internal error (db2iexec): failure to extract stdout"
+       exit 1
+    fi
+
+    STDERR=`echo ${STDOUTERR?} | cut -d":" -f2`
+    if [ $? -ne 0 ]; then
+       echo "Internal error (db2iexec): failure to extract stderr"
+       exit 1
+    fi
+
+    if [ "X${STDOUT?}" = "X" -a "X${STDERR?}" = "X" ]; then
+       echo "Internal error (db2iexec): you have to provide at least stdout or stderr"
+       exit 1
+    fi
+}
+
+#--------------------------------------------------------------------------
+# Name          - format_envvars
+#
+# Function      - Reformat ENVVARS based on shell type. It will save the 
+#                 reformatted string in a variable called $FORMATTED_VARS.
+#                 ENVVARS should be in the form <var1>=<val1> <var2>=<val2>
+#                 For instance, ENVVARS="FOO=bar FOO2=bar2 ...". 
+#                 Then calling format_envvars csh will set $FORMATTED_VARS
+#                 to "setenv FOO bar; setenv FOO bar2; ..."
+# 
+# Parameters    - $1 SHELLTYPE. eg: csh
+# Example       - format_envvars csh
+#--------------------------------------------------------------------------
+format_envvars()
+{
+  SHELLTYPE=$1
+
+    case ${SHELLTYPE?} in
+        *csh) 
+            for pair in ${ENVVARS?}
+            do
+              VARNAME=`echo ${pair?} | cut -d"=" -f1`
+              VALUE=`echo ${pair?} | cut -d"=" -f2`
+
+              if [ "X${VARNAME?}" != "X" ]; then
+                FORMATTED_VARS="${FORMATTED_VARS?} setenv ${VARNAME?} ${VALUE?};"
+              else
+                echo "Internal error (db2iexec): failed to parse ENVVARS"
+                exit 1
+              fi
+            done
+            ;;
+        *)
+            FORMATTED_VARS=${ENVVARS?}
+            ;;
+    esac
+}
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+# Process command-line options
+while getopts :v:o:n optchar; do
+    case "${optchar?}" in
+        n)  # SHOWLOGFLAG
+            SHOWLOGFLAG="1"
+            ;;
+        o)  # HANDLER_OUTPUT
+            STDOUTERR="${OPTARG}"
+            set_stdout_stderr
+            ;;
+        v)  # Specify environment variables
+            ENVVARS="${ENVVARS?} ${OPTARG?} "
+            ;;
+    esac
+done
+
+# Get the instance name
+shift `expr ${OPTIND?} - 1`
+INSTNAME=$1
+
+# Get the command to run
+shift
+COMMAND=$*
+
+# Look for the instance HOME dir by using db2usrinf. 
+if [ -f ${DB2DIR?}/bin/db2usrinf ] ; then
+  USERHOME=`${DB2DIR?}/bin/db2usrinf -d ${INSTNAME?}`
+else
+   USERHOME=`${DB2DIR?}/linuxamd64/bin/db2usrinf -d ${INSTNAME?}`
+fi
+
+# Get the instance SHELL by using db2usrinf
+if [ -f ${DB2DIR?}/bin/db2usrinf ] ; then
+    USERSHELL=`${DB2DIR?}/bin/db2usrinf -s ${INSTNAME?}`
+else
+    USERSHELL=`${DB2DIR?}/linuxamd64/bin/db2usrinf -s ${INSTNAME?}`
+fi
+
+# Get the sqllib
+SQLLIB="sqllib/db2"
+if [ -d ${USERHOME?}/das ]
+then
+    SQLLIB="das/das"
+fi
+
+# Build the command. Basically we want to build the following:
+# <source db2cshrc/db2profile>;<env vars> <command> <stdout> <stderr>
+case ${USERSHELL?} in
+    *csh) 
+        if [ "X${ENVVARS?}" != "X" ]; then
+            format_envvars "csh"
+        fi 
+
+        PROFILE=""
+        if [ -f ${USERHOME?}/${SQLLIB?}cshrc ]; then
+           PROFILE="source ${USERHOME?}/${SQLLIB?}cshrc >& /dev/null;"
+        fi
+
+        FULLCOMMAND="${FORMATTED_VARS?} ${COMMAND?}"
+
+        if [ ${HANDLE_OUTPUT?} -eq 0 ]; then
+
+            if [ "X${STDOUT?}" != "X" ]; then
+                FULLCOMMAND="${FULLCOMMAND?} >${STDOUT?}"
+            fi
+
+            if [ "X${STDERR?}" != "X" ]; then
+                FULLCOMMAND="(${FULLCOMMAND?}) >&${STDERR?} "
+            fi
+        fi
+
+        FULLCOMMAND="${PROFILE?} ${FULLCOMMAND?}"
+        ;;
+    *)
+        if [ "X${ENVVARS?}" != "X" ]; then
+            format_envvars "${USERSHELL?}"
+        fi
+
+        PROFILE=""
+        if [ -f ${USERHOME?}/${SQLLIB?}profile ]; then
+            PROFILE=". ${USERHOME?}/${SQLLIB?}profile 1>/dev/null 2>/dev/null;"
+        fi
+
+        FULLCOMMAND="${PROFILE?} ${FORMATTED_VARS?} ${COMMAND?}"
+
+        if [ ${HANDLE_OUTPUT?} -eq 0 ]; then
+
+            if [ "X${STDOUT?}" != "X" ]; then
+                FULLCOMMAND="${FULLCOMMAND?} 1> ${STDOUT?}"
+            fi
+
+            if [ "X${STDERR?}" != "X" ]; then
+                FULLCOMMAND="${FULLCOMMAND?} 2> ${STDERR?}"
+            fi
+        fi
+        ;;
+esac
+
+PROCID=$$                                    # Process ID
+TMPFILE="/tmp/${PROGNAME?}.tmp.${PROCID?}"   # Temp. file
+
+su - ${INSTNAME?} -c "${FULLCOMMAND?}; echo \$? > ${TMPFILE?}" 1>/dev/null 2>/dev/null
+
+return_code=`cat ${TMPFILE?} 2>/dev/null`
+rm -f ${TMPFILE?} 1>/dev/null 2>/dev/null
+
+if [ ${SHOWLOGFLAG?} -eq 0 ]; then
+    if [ ${return_code?} -ne 0 ]; then
+        if [ -f ${USERHOME?}/sqllib/db2dump/db2diag.log ]; then
+            cat ${USERHOME?}/sqllib/db2dump/db2diag.log >&2
+        fi
+    fi
+fi
+
+exit ${return_code?}
+

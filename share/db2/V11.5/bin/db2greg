@@ -1,0 +1,56 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+sh_readlink()
+{
+  if [ -x /usr/bin/readlink ]; then
+    /usr/bin/readlink "$1"
+  elif [ -x /usr/bin/perl ]; then
+    /usr/bin/perl -le "print readlink shift" "$1"
+  else
+    /usr/bin/ls -l "$1" | sed -e 's/.* -> //'
+  fi
+}
+
+curdir=`/bin/pwd`
+zero="$0"
+if [ -h ${zero?} ]; then
+  # so that we are relative to its directory.
+  cd $(dirname ${zero?})
+  zero=$(sh_readlink ${zero?})
+fi
+
+if [ -n "${DB2LOCAL}" ] && [ -f ${DB2LOCAL?}/.mount ]; then
+  DB2DIR="${DB2LOCAL?}/instance"
+else
+  DB2DIR=`dirname ${zero?}`
+  cd ${DB2DIR?}
+  DB2DIR=`/bin/pwd`
+fi
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+
+cd ${curdir?}
+
+# if we are running as /usr/local/bin/db2greg, but
+# we are running inside another instance's environment,
+# unset the critical aspects of the instance environment
+# so that the real db2greg loads its own libraries
+# instead of the ones from this instance.
+unset LD_LIBRARY_PATH LIBPATH
+
+${DB2DIR?}/bin/db2greg_exe "$@"

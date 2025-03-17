@@ -1,0 +1,427 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2isetup
+#
+# FUNCTION: Starts the DB2 Setup wizard in Instance Setup mode.
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+set ${setopts?}
+
+NODISPLAY=1
+DB2INSTLOG=""
+MSGCOUNT=1
+TRUE=0
+FALSE=1
+DEBUG=${FALSE?}
+DB2_LANG_JAVA_SET=0
+REMOTE=${FALSE?}
+
+if [ "X$DB2USELOCALJRE" != "X" ]; then
+   QUICKSTART=""
+else
+   QUICKSTART="-Xquickstart "
+fi
+
+## wsdbu01234360myk
+
+JAVA_OPTIONS="$JAVA_OPTIONS  -Xmso2m -Xss2m -mx128m -ms32m  ${QUICKSTART?}   -Ddb2.nostrict=TRUE "
+
+if [ "X$DB2IJRETEST" != "X" ]
+then
+   JAVA_OPTIONS="$JAVA_OPTIONS -Ddb2install.jdktest=$DB2IJRETEST"
+fi
+
+DB2LOCAL=`echo $DB2LOCAL`
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then 
+   if [ -d ${DB2LOCAL?}/instance ]; then
+      PROGDIR=${DB2LOCAL?}/instance
+      curdir=`/bin/pwd`
+   fi
+else
+   # Set the directory name where this file is located.
+   curdir=`/bin/pwd`
+   PROGDIR=`dirname $0`
+   cd ${PROGDIR?}
+   PROGDIR=`/bin/pwd`
+   PROGNAME=`basename $0`    # Program name
+   cd ${curdir?}
+fi
+
+if [ "X$DB2CURDIR" != "X" ]; then
+    TOPDIR=${DB2CURDIR?}
+else
+    TOPDIR=${curdir?}
+fi
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+export DB2DIR
+
+INST_LIB_DIR="${PROGDIR?}/native/install"
+DB2_LIB_DIR="${DB2DIR?}/lib"
+
+INSTALLDIR=${INST_LIB_DIR?}
+CMD_DB2IURE=db2iure
+RSPFILE_INSTALL=1
+TRACE_OPT=${FALSE?}
+DB2OPTS="-idir ${INSTALLDIR?}"
+
+PATH=".:"${PATH}
+export PATH
+
+LIBPATH=.:${INSTALLDIR?}:${DB2DIR?}/lib:${LIBPATH}
+export LIBPATH
+
+LD_LIBRARY_PATH=.:${INSTALLDIR?}:${DB2DIR?}/lib:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH
+
+SHLIB_PATH=.:${INSTALLDIR?}:${DB2DIR?}/lib:${SHLIB_PATH}
+export SHLIB_PATH
+
+TMPDIR=${DB2TMPDIR:-/tmp}
+
+# Include common definition file; used for DBI messages
+if [ -f ${PROGDIR?}/../instance/db2idefs ]; then
+    . ${PROGDIR?}/../instance/db2idefs
+else
+    /usr/bin/echo "File ${PROGDIR?}/db2idefs not found."
+    /usr/bin/echo "Exiting..."
+    exit 1
+fi
+
+cd ${DB2DIR?}
+
+get_locale
+
+# only needed for IBM JVMs, but doesn't hurt for non-IBM JVMs.
+IBM_JAVACOREDIR=${TMPDIR?}
+export IBM_JAVACOREDIR
+
+if [ `${DB2DIR?}/bin/db2usrinf -E` -ne 0 ]; then
+       TMP_USER=`${DB2DIR?}/bin/db2usrinf -n -E`
+       ERRFILE_NAME="db2isetup_${TMP_USER?}.err"
+       LOGFILE_NAME="db2isetup_${TMP_USER?}.log"
+       TRCFILE_NAME="db2isetup_${TMP_USER?}.trc"
+else
+       ERRFILE_NAME="db2isetup.err"
+       LOGFILE_NAME="db2isetup.log"
+       TRCFILE_NAME="db2isetup.trc"
+fi
+ERRFILE=${TMPDIR?}/${ERRFILE_NAME?}
+LOGFILE=${TMPDIR?}/${LOGFILE_NAME?}
+TRCFILE=${TMPDIR?}/${TRCFILE_NAME?}
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+# To display the command syntax
+syntax ()
+{
+		display_msg ${DB2CAT?} 387 \
+        'DBI1387I Usage: %s [-h] [-J JAVA_OPTIONS] [-r RespFile] [-d|-t tracefile] [-l logfile]' ${PROGNAME?}
+    exit 1
+}
+
+# To display help message
+helpmsg ()
+{
+   msgidx=42201 #starting message index
+   lastidx=42223 #one greater than last index
+
+   while [ ${msgidx?} -lt ${lastidx?} ]
+   do 
+       display_msg ${DB2ISTR?} $msgidx \
+      'Failed to load the message\n' ${PROGNAME?}
+   msgidx=`expr ${msgidx?} + 1` 
+    
+   done
+   exit 1
+}
+
+# Check if absolute path is given
+chk_abs_path ()
+{
+   set ${setopts?}
+   file_path=$1
+   echo ${file_path?} | grep '^/' 2>&1 1>/dev/null
+   return $?
+}
+# Check if copy owner is running the prog
+chk_copy_owner ()
+{
+    set ${setopts?}
+
+    if [ $# -ne 1 ]; then
+       echo "Usage chk_copy_owner <install path>"
+       exit 67
+    fi
+    tmp_install_path=$1
+    tmp_bin_dir="${tmp_install_path?}/bin"
+    if [ -f "${tmp_install_path?}/doc/bin/db2usrinf" ]; then
+       tmp_bin_dir="${tmp_install_path?}/doc/bin"
+    fi
+    if [ -f ${tmp_bin_dir?}/db2usrinf ]; then
+      tmp_runner=`${tmp_bin_dir?}/db2usrinf -n -E`
+    else
+      display_msg ${DB2CAT?} 95 \
+          "DBI1095W  The file or directory %s cannot be found." ${tmp_bin_dir?}/db2usrinf
+      exit 67
+    fi
+
+    find ${tmp_bin_dir?} -user ${tmp_runner?} -name db2usrinf | grep db2usrinf 1>/dev/null 2>/dev/null
+    tmp_rc=$?
+    if [ ${tmp_rc?} -ne 0 ]; then
+        if [ `${tmp_bin_dir?}/db2usrinf -E` -eq 0 ]; then
+           find ${tmp_bin_dir?} -user bin -name db2usrinf | grep db2usrinf 1>/dev/null 2>/dev/null
+           tmp_rc=$?
+        fi
+        if [ ${tmp_rc?} -ne 0 ]; then
+           display_msg ${DB2CAT?} 149 \
+               'DBI1149E You have to be the owner of the install copy to execute this program.'
+           exit 67
+        fi
+    fi
+}
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+# Process command-line options
+
+if [ ! -z "$1" ]; then
+   if [ $1 = "-?" ]
+   then
+      helpmsg
+   fi
+fi
+ 
+while getopts :r:u:J:t:hdi:l:R optchar; do
+    case ${optchar?} in
+        r|u)  # Response file
+            if [ -z "${OPTARG?}" ]
+            then
+                syntax
+            fi
+            if [ -f "${OPTARG?}" ]
+            then
+                RSPFILE_INSTALL=0
+                RSPFILE="${OPTARG?}"
+                # Check if absolute path was given
+                chk_abs_path ${RSPFILE?}
+                if [ $? -ne ${TRUE?} ]; then
+                    RSPFILE="${TOPDIR?}/${RSPFILE?}"
+                fi
+                DB2OPTS="${DB2OPTS?} -r ${RSPFILE?} "
+            else
+                echo "The response file ${OPTARG?} does not exist"
+                syntax
+            fi
+            ;;
+        J)  # set JAVA_OPTIONS env variable
+            JAVA_OPTIONS="${JAVA_OPTIONS?} ${OPTARG?}"
+            ;;
+        t)  # trace
+            if [ -z "${OPTARG?}" ]
+            then
+                syntax
+            fi
+            TRCFILE="${OPTARG?}"
+            # Check if absolute path was given
+            chk_abs_path ${TRCFILE?}
+            if [ $? -ne ${TRUE?} ]; then
+                 TRCFILE="${TOPDIR?}/${TRCFILE?}"
+            fi
+            IBM_JAVACOREDIR=`dirname ${TRCFILE?}`
+            export IBM_JAVACOREDIR
+            TRACE_OPT=${TRUE?}
+            TRACE=0
+            ;;
+        d)  # v7-style debug.
+            rm -f ${TMPDIR?}/db2isetup.trc 2> /dev/null
+            TRACE=${TRUE?}
+            DEBUG=${TRUE?}
+            ;;
+        i)  # "in" language
+            if [ -z "${OPTARG?}" ]
+            then
+                syntax
+            fi
+            LANG="${OPTARG?}"
+            ;;
+        l)  # logfile location
+            if [ -z "${OPTARG?}" ]
+            then
+                syntax
+            fi
+            LOGFILE="${OPTARG?}"
+            # Check if absolute path was given
+            chk_abs_path ${LOGFILE?}
+            if [ $? -ne ${TRUE?} ]; then
+                 LOGFILE="${TOPDIR?}/${LOGFILE?}"
+            fi
+            ;;
+        R)  # remote setup
+            REMOTE=${TRUE?}
+            ;;
+        h)  # Display help
+            helpmsg 
+            ;;
+        \?)# Invalid option specified
+            syntax 
+            ;;
+    esac
+done
+
+if [ ! -f ${DB2LOCAL?}/.mount ]; then
+   chk_copy_owner "${DB2DIR?}"
+fi
+
+if [ ${REMOTE?} -eq ${TRUE?} ]; then
+    DB2OPTS="${DB2OPTS?} -R"
+fi
+DB2OPTS="${DB2OPTS?} -l ${LOGFILE?} -t ${TRCFILE?} -e db2isetup"
+ERRFILE=`dirname ${LOGFILE?}`/${ERRFILE_NAME?}
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   if [ ${RSPFILE_INSTALL?} -ne 0 ]; then
+      display_msg ${DB2ISTR?} 20127 \
+         "DBI20127E The command failed because it is not supported or is invalid. \n"
+      exit 67
+   fi
+fi
+
+if [ ${RSPFILE_INSTALL?} -eq 0 ]; then
+    # run db2iure with responsefile
+    # DB2OPTS="${DB2OPTS?} -packageLocation ${DB2DIR?}/native/install"
+    export PROGNAME
+    exec ${INSTALLDIR?}/${CMD_DB2IURE?} ${DB2OPTS?} -l ${LOGFILE?}
+else
+    # run the Java GUI installer
+    JAVA_CLASSPATH="${PROGDIR?}/common/install.jar:${PROGDIR?}/common/Common.jar:${PROGDIR?}/common/RtClientMRI.jar:${PROGDIR?}/native/install/codegen.jar:${PROGDIR?}/common/jhbasic.jar:${PROGDIR?}/../das/java/db2das.jar:${PROGDIR?}/../das/java/db2md.jar:${PROGDIR?}/../tools/db2cmn.jar"
+    JAVA_INTERPRETER="java"
+    JAVA_PATH=""
+
+    rm -f ${ERRFILE?} 2> /dev/null 1> /dev/null
+
+    if [ "${SHORTLANG?}" != 'en_US' -a -d ${PROGDIR?}/common/mri/${SHORTLANG?} ]
+    then
+        JAVA_CLASSPATH="$JAVA_CLASSPATH:${PROGDIR?}/common/mri/${SHORTLANG?}/install_mri.jar"
+    fi
+    JAVA_CLASSPATH="$JAVA_CLASSPATH:${PROGDIR?}/common/mri/en_US/install_mri.jar"
+
+    if [ ! -f "${DB2DIR?}/instance/common/install.jar" ]; then
+         display_msg ${DB2CAT?} 146 \
+           "DBI1146E DB2 Instance Setup wizard is not installed.\n"
+         exit 67
+    fi
+
+    # if DB2_USE_JAVA_HOME is defined *and* JAVA_HOME is defined, use JAVA_HOME,
+    # otherwise use the one we installed.
+    if [ "X$DB2USELOCALJRE" = "X" ]; then
+      if [ -d "${DB2DIR?}/java/jdk64" ]
+      then
+        # Setup the expected path
+        JAVA_HOME="${DB2DIR?}/java/jdk64"
+      elif [ -d "${DB2DIR?}/java/jdk32" ]
+      then
+        # Setup the expected path
+        JAVA_HOME="${DB2DIR?}/java/jdk32"
+      fi
+      USING_CERTIFIED_JAVA=0
+    else
+      USING_CERTIFIED_JAVA=1
+    fi
+
+    if [ -d "$JAVA_HOME/jre/bin/" ]; then
+         JAVA_PATH="$JAVA_HOME/jre/bin/"
+    elif [ -d "$JAVA_HOME/../jre/bin/" ]; then
+         JAVA_PATH="$JAVA_HOME/../jre/bin/"
+    fi
+
+    if [ "X$DB2USELOCALJRE" != "X" -o  ! -d "$JAVA_PATH" ]; then
+      DB2SetupRun="DB2JDKTester"
+    else
+      DB2SetupRun="DB2Setup"
+    fi
+
+    # Test to see if the JRE is present before trying to run the local copy
+    $JAVA_PATH$JAVA_INTERPRETER 1>/dev/null 2>/dev/null
+    rc=$?
+
+    if [ $rc -ne 127 ]
+    then
+       if [ ${DEBUG?} -eq ${TRUE?} ]; then
+          echo "$JAVA_PATH$JAVA_INTERPRETER $JAVA_OPTIONS -classpath $JAVA_CLASSPATH ${DB2SetupRun?} -isetup -idir $INST_LIB_DIR ${DB2OPTS?} -e ${ERRFILE_NAME?} 2> ${ERRFILE?}.running"
+          DB2SetupRun="${DB2SetupRun?} -d"
+       fi
+       $JAVA_PATH$JAVA_INTERPRETER $JAVA_OPTIONS -classpath $JAVA_CLASSPATH ${DB2SetupRun?} -isetup -idir $INST_LIB_DIR ${DB2OPTS?} -e ${ERRFILE_NAME?} 2> ${ERRFILE?}.running
+       rc=$?
+       mv ${TMPDIR?}/db2isetup.err.running ${TMPDIR?}/db2isetup.err 2> /dev/null
+       rm -f ${TMPDIR?}/db2isetup.err.running 2> /dev/null
+    else
+       # The local JRE test failed.  Display an error
+       JRE_VER="1.4.2"
+       display_msg ${DB2CAT?} 377 \
+           "DB2I1377N:  JRE not found.  Please refer to the DB2 Installation Notes.\n" \
+           ${JRE_VER?}
+       exit 1
+    fi
+
+fi
+
+exit $rc
+

@@ -1,0 +1,12 @@
+#! /bin/sh
+# (C) COPYRIGHT International Business Machines Corp. 2003
+# All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+# This script runs Develop XML Configuration File wizard on UNIX.
+#
+# export DB2PATH=/home/$DB2INSTANCE/sqllib
+
+db2javit -j:"com.ibm.db2.tools.wrapperTools.configWizard.WrapperWizard" -i: -l: -o:"-Xmx128m -Xms32m" -a:"+S"

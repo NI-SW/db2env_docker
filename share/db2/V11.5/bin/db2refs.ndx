@@ -1,0 +1,611 @@
+611
+BETWEEN Predicate,file:///%DB2PATH%/doc/html/db2s0/sqls066.htm,header_248,1,
+EXISTS Predicate,file:///%DB2PATH%/doc/html/db2s0/sqls066.htm,header_249,1,
+IN Predicate,file:///%DB2PATH%/doc/html/db2s0/sqls066.htm,header_250,1,
+LIKE Predicate,file:///%DB2PATH%/doc/html/db2s0/sqls066.htm,hdrch2like,1,
+NULL Predicate,file:///%DB2PATH%/doc/html/db2s0/sqls066.htm,header_253,1,
+BLOB,file:///%DB2PATH%/doc/html/db2s0/sqls0410.htm,,1,
+CHAR,file:///%DB2PATH%/doc/html/db2s0/sqls0411.htm,,1,
+COALESCE,file:///%DB2PATH%/doc/html/db2s0/sqls0412.htm,,1,
+DATE,file:///%DB2PATH%/doc/html/db2s0/sqls0413.htm,,1,
+DAY,file:///%DB2PATH%/doc/html/db2s0/sqls0414.htm,,1,
+DAYS,file:///%DB2PATH%/doc/html/db2s0/sqls0415.htm,,1,
+DECIMAL,file:///%DB2PATH%/doc/html/db2s0/sqls0416.htm,,1,
+DIGITS,file:///%DB2PATH%/doc/html/db2s0/sqls0417.htm,,1,
+DOUBLE,file:///%DB2PATH%/doc/html/db2s0/sqls0418.htm,,1,
+EVENT_MON_STATE,file:///%DB2PATH%/doc/html/db2s0/sqls0419.htm,,1,
+FLOAT,file:///%DB2PATH%/doc/html/db2s0/sqls0420.htm,,1,
+HEX,file:///%DB2PATH%/doc/html/db2s0/sqls0421.htm,,1,
+HOUR,file:///%DB2PATH%/doc/html/db2s0/sqls0422.htm,,1,
+INTEGER,file:///%DB2PATH%/doc/html/db2s0/sqls0423.htm,,1,
+LENGTH,file:///%DB2PATH%/doc/html/db2s0/sqls0424.htm,,1,
+MICROSECOND,file:///%DB2PATH%/doc/html/db2s0/sqls0425.htm,,1,
+MINUTE,file:///%DB2PATH%/doc/html/db2s0/sqls0426.htm,,1,
+MONTH,file:///%DB2PATH%/doc/html/db2s0/sqls0427.htm,,1,
+NULLIF,file:///%DB2PATH%/doc/html/db2s0/sqls0428.htm,,1,
+POSSTR,file:///%DB2PATH%/doc/html/db2s0/sqls0429.htm,,1,
+RAISE_ERROR,file:///%DB2PATH%/doc/html/db2s0/sqls0430.htm,,1,
+SECOND,file:///%DB2PATH%/doc/html/db2s0/sqls0431.htm,,1,
+SUBSTR,file:///%DB2PATH%/doc/html/db2s0/sqls0432.htm,,1,
+TABLE_NAME,file:///%DB2PATH%/doc/html/db2s0/sqls0433.htm,,1,
+TABLE_SCHEMA,file:///%DB2PATH%/doc/html/db2s0/sqls0434.htm,,1,
+TIME,file:///%DB2PATH%/doc/html/db2s0/sqls0435.htm,,1,
+TIMESTAMP,file:///%DB2PATH%/doc/html/db2s0/sqls0436.htm,,1,
+TRANSLATE,file:///%DB2PATH%/doc/html/db2s0/sqls0437.htm,,1,
+VALUE,file:///%DB2PATH%/doc/html/db2s0/sqls0438.htm,,1,
+VARCHAR,file:///%DB2PATH%/doc/html/db2s0/sqls0439.htm,,1,
+VARGRAPHIC,file:///%DB2PATH%/doc/html/db2s0/sqls0440.htm,,1,
+YEAR,file:///%DB2PATH%/doc/html/db2s0/sqls0441.htm,,1,
+User-Defined Functions,file:///%DB2PATH%/doc/html/db2s0/db2s0170.htm,,1,
+REAL,file:///%DB2PATH%/doc/html/db2s0/sqls0443.htm,,1,
+NODENUMBER,file:///%DB2PATH%/doc/html/db2s0/sqls0444.htm,,1,
+PARTITION,file:///%DB2PATH%/doc/html/db2s0/sqls0445.htm,,1,
+GROUPING,file:///%DB2PATH%/doc/html/db2s0/sqls0446.htm,,1,
+ABS or ABSVAL,file:///%DB2PATH%/doc/html/db2s0/sqls0447.htm,,1,
+ACOS,file:///%DB2PATH%/doc/html/db2s0/sqls0448.htm,,1,
+ASCII,file:///%DB2PATH%/doc/html/db2s0/sqls0449.htm,,1,
+ASIN,file:///%DB2PATH%/doc/html/db2s0/sqls0450.htm,,1,
+ATAN,file:///%DB2PATH%/doc/html/db2s0/sqls0451.htm,,1,
+ATAN2,file:///%DB2PATH%/doc/html/db2s0/sqls0452.htm,,1,
+CEIL or CEILING,file:///%DB2PATH%/doc/html/db2s0/sqls0453.htm,,1,
+CHR,file:///%DB2PATH%/doc/html/db2s0/sqls0454.htm,,1,
+CHAR,file:///%DB2PATH%/doc/html/db2s0/sqls0455.htm,,1,
+COS,file:///%DB2PATH%/doc/html/db2s0/sqls0456.htm,,1,
+COT,file:///%DB2PATH%/doc/html/db2s0/sqls0457.htm,,1,
+DAYNAME,file:///%DB2PATH%/doc/html/db2s0/sqls0458.htm,,1,
+DAYOFWEEK,file:///%DB2PATH%/doc/html/db2s0/sqls0459.htm,,1,
+DAYOFYEAR,file:///%DB2PATH%/doc/html/db2s0/sqls0460.htm,,1,
+DEGREES,file:///%DB2PATH%/doc/html/db2s0/sqls0461.htm,,1,
+DIFFERENCE,file:///%DB2PATH%/doc/html/db2s0/sqls0462.htm,,1,
+DOUBLE,file:///%DB2PATH%/doc/html/db2s0/sqls0463.htm,,1,
+EXP,file:///%DB2PATH%/doc/html/db2s0/sqls0464.htm,,1,
+FLOOR,file:///%DB2PATH%/doc/html/db2s0/sqls0465.htm,,1,
+INSERT,file:///%DB2PATH%/doc/html/db2s0/sqls0466.htm,,1,
+JULIAN_DAY,file:///%DB2PATH%/doc/html/db2s0/sqls0467.htm,,1,
+LCASE,file:///%DB2PATH%/doc/html/db2s0/sqls0468.htm,,1,
+LEFT,file:///%DB2PATH%/doc/html/db2s0/sqls0469.htm,,1,
+LN,file:///%DB2PATH%/doc/html/db2s0/sqls0470.htm,,1,
+LOCATE,file:///%DB2PATH%/doc/html/db2s0/sqls0471.htm,,1,
+LOG,file:///%DB2PATH%/doc/html/db2s0/sqls0472.htm,,1,
+LOG10,file:///%DB2PATH%/doc/html/db2s0/sqls0473.htm,,1,
+LTRIM,file:///%DB2PATH%/doc/html/db2s0/sqls0474.htm,,1,
+MIDNIGHT_SECONDS,file:///%DB2PATH%/doc/html/db2s0/sqls0475.htm,,1,
+MOD,file:///%DB2PATH%/doc/html/db2s0/sqls0476.htm,,1,
+MONTHNAME,file:///%DB2PATH%/doc/html/db2s0/sqls0477.htm,,1,
+POWER,file:///%DB2PATH%/doc/html/db2s0/sqls0478.htm,,1,
+QUARTER,file:///%DB2PATH%/doc/html/db2s0/sqls0479.htm,,1,
+RADIANS,file:///%DB2PATH%/doc/html/db2s0/sqls0480.htm,,1,
+RAND,file:///%DB2PATH%/doc/html/db2s0/sqls0481.htm,,1,
+REPEAT,file:///%DB2PATH%/doc/html/db2s0/sqls0482.htm,,1,
+REPLACE,file:///%DB2PATH%/doc/html/db2s0/sqls0483.htm,,1,
+RIGHT,file:///%DB2PATH%/doc/html/db2s0/sqls0484.htm,,1,
+ROUND,file:///%DB2PATH%/doc/html/db2s0/sqls0485.htm,,1,
+RTRIM,file:///%DB2PATH%/doc/html/db2s0/sqls0486.htm,,1,
+SIGN,file:///%DB2PATH%/doc/html/db2s0/sqls0487.htm,,1,
+SIN,file:///%DB2PATH%/doc/html/db2s0/sqls0488.htm,,1,
+SOUNDEX,file:///%DB2PATH%/doc/html/db2s0/sqls0489.htm,,1,
+SPACE,file:///%DB2PATH%/doc/html/db2s0/sqls0490.htm,,1,
+SQRT,file:///%DB2PATH%/doc/html/db2s0/sqls0491.htm,,1,
+TAN,file:///%DB2PATH%/doc/html/db2s0/sqls0492.htm,,1,
+TIMESTAMP_ISO,file:///%DB2PATH%/doc/html/db2s0/sqls0493.htm,,1,
+TIMESTAMPDIFF,file:///%DB2PATH%/doc/html/db2s0/sqls0494.htm,,1,
+TRUNC or TRUNCATE,file:///%DB2PATH%/doc/html/db2s0/sqls0495.htm,,1,
+UCASE,file:///%DB2PATH%/doc/html/db2s0/sqls0496.htm,,1,
+WEEK,file:///%DB2PATH%/doc/html/db2s0/sqls0497.htm,,1,
+AVG,file:///%DB2PATH%/doc/html/db2s0/sqls0402.htm,,1,
+COUNT,file:///%DB2PATH%/doc/html/db2s0/sqls0403.htm,,1,
+MAX,file:///%DB2PATH%/doc/html/db2s0/sqls0404.htm,,1,
+MIN,file:///%DB2PATH%/doc/html/db2s0/sqls0405.htm,,1,
+STDDEV,file:///%DB2PATH%/doc/html/db2s0/sqls0406.htm,,1,
+VARIANCE,file:///%DB2PATH%/doc/html/db2s0/sqls0408.htm,,1,
+COUNT_BIG,file:///%DB2PATH%/doc/html/db2s0/sqls0498.htm,,1,
+GENERATE_UNIQUE,file:///%DB2PATH%/doc/html/db2s0/sqls0499.htm,,1,
+CONCAT,file:///%DB2PATH%/doc/html/db2s0/sqls04a1.htm,,1,
+DBCLOB,file:///%DB2PATH%/doc/html/db2s0/sqls04a2.htm,,1,
+GRAPHIC,file:///%DB2PATH%/doc/html/db2s0/sqls04a3.htm,,1,
+LONG_VARGRAPHIC,file:///%DB2PATH%/doc/html/db2s0/sqls04a4.htm,,1,
+LONG_VARCHAR,file:///%DB2PATH%/doc/html/db2s0/sqls04a5.htm,,1,
+CLOB,file:///%DB2PATH%/doc/html/db2s0/sqls04a6.htm,,1,
+ALTER TABLE,file:///%DB2PATH%/doc/html/db2s0/sqls0604.htm,,1,
+ALTER TABLESPACE,file:///%DB2PATH%/doc/html/db2s0/sqls0605.htm,,1,
+BEGIN DECLARE SECTION,file:///%DB2PATH%/doc/html/db2s0/sqls0606.htm,,1,
+CALL,file:///%DB2PATH%/doc/html/db2s0/sqls0607.htm,,1,
+CLOSE,file:///%DB2PATH%/doc/html/db2s0/sqls0608.htm,,1,
+COMMENT ON,file:///%DB2PATH%/doc/html/db2s0/sqls0609.htm,,1,
+COMMIT,file:///%DB2PATH%/doc/html/db2s0/sqls0610.htm,,1,
+CONNECT (Type 1),file:///%DB2PATH%/doc/html/db2s0/sqls0612.htm,,1,
+CONNECT (Type 2),file:///%DB2PATH%/doc/html/db2s0/sqls0613.htm,,1,
+CREATE ALIAS,file:///%DB2PATH%/doc/html/db2s0/sqls0614.htm,,1,
+CREATE DISTINCT TYPE,file:///%DB2PATH%/doc/html/db2s0/sqls0615.htm,,1,
+CREATE EVENT MONITOR,file:///%DB2PATH%/doc/html/db2s0/sqls0616.htm,,1,
+CREATE FUNCTION,file:///%DB2PATH%/doc/html/db2s0/sqls0616.htm,,1,
+CREATE FUNCTION (External Scalar),file:///%DB2PATH%/doc/html/db2s0/sqls061e.htm,,1,
+CREATE FUNCTION (External Table),file:///%DB2PATH%/doc/html/db2s0/sqls061t.htm,,1,
+CREATE FUNCTION (Sourced),file:///%DB2PATH%/doc/html/db2s0/sqls061s.htm,,1,
+CREATE INDEX,file:///%DB2PATH%/doc/html/db2s0/sqls0618.htm,,1,
+CREATE PROCEDURE,file:///%DB2PATH%/doc/html/db2s0/sqls0619.htm,,1,
+CREATE SCHEMA,file:///%DB2PATH%/doc/html/db2s0/sqls0620.htm,,1,
+CREATE TABLE,file:///%DB2PATH%/doc/html/db2s0/sqls0621.htm,,1,
+CREATE TABLESPACE,file:///%DB2PATH%/doc/html/db2s0/sqls0622.htm,,1,
+CREATE TRIGGER,file:///%DB2PATH%/doc/html/db2s0/sqls0623.htm,,1,
+CREATE VIEW,file:///%DB2PATH%/doc/html/db2s0/sqls0624.htm,,1,
+DECLARE CURSOR,file:///%DB2PATH%/doc/html/db2s0/sqls0625.htm,,1,
+DELETE,file:///%DB2PATH%/doc/html/db2s0/sqls0626.htm,,1,
+DESCRIBE,file:///%DB2PATH%/doc/html/db2s0/sqls0627.htm,,1,
+DISCONNECT,file:///%DB2PATH%/doc/html/db2s0/sqls0628.htm,,1,
+DROP,file:///%DB2PATH%/doc/html/db2s0/sqls0629.htm,,1,
+END DECLARE SECTION,file:///%DB2PATH%/doc/html/db2s0/sqls0630.htm,,1,
+EXECUTE,file:///%DB2PATH%/doc/html/db2s0/sqls0631.htm,,1,
+EXECUTE IMMEDIATE,file:///%DB2PATH%/doc/html/db2s0/sqls0632.htm,,1,
+EXPLAIN,file:///%DB2PATH%/doc/html/db2s0/sqls0633.htm,,1,
+FETCH,file:///%DB2PATH%/doc/html/db2s0/sqls0634.htm,,1,
+FREE LOCATOR,file:///%DB2PATH%/doc/html/db2s0/sqls0635.htm,,1,
+GRANT (Database Authorities),file:///%DB2PATH%/doc/html/db2s0/sqls0636.htm,,1,
+GRANT (Index Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0638.htm,,1,
+GRANT (Package Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0639.htm,,1,
+GRANT (Table or View Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0640.htm,,1,
+INCLUDE,file:///%DB2PATH%/doc/html/db2s0/sqls0641.htm,,1,
+INSERT,file:///%DB2PATH%/doc/html/db2s0/sqls0642.htm,,1,
+LOCK TABLE,file:///%DB2PATH%/doc/html/db2s0/sqls0643.htm,,1,
+OPEN,file:///%DB2PATH%/doc/html/db2s0/sqls0644.htm,,1,
+PREPARE,file:///%DB2PATH%/doc/html/db2s0/sqls0645.htm,,1,
+RELEASE,file:///%DB2PATH%/doc/html/db2s0/sqls0646.htm,,1,
+REVOKE (Database Authorities),file:///%DB2PATH%/doc/html/db2s0/sqls0647.htm,,1,
+REVOKE (Index Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0649.htm,,1,
+REVOKE (Package Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0650.htm,,1,
+REVOKE (Table or View Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0651.htm,,1,
+ROLLBACK,file:///%DB2PATH%/doc/html/db2s0/sqls0652.htm,,1,
+SELECT,file:///%DB2PATH%/doc/html/db2s0/sqls0653.htm,,1,
+SELECT INTO,file:///%DB2PATH%/doc/html/db2s0/sqls0654.htm,,1,
+SET CONNECTION,file:///%DB2PATH%/doc/html/db2s0/sqls0655.htm,,1,
+SET CONSTRAINTS,file:///%DB2PATH%/doc/html/db2s0/sqls0656.htm,,1,
+SET CURRENT EXPLAIN MODE,file:///%DB2PATH%/doc/html/db2s0/sqls0657.htm,,1,
+SET CURRENT EXPLAIN SNAPSHOT,file:///%DB2PATH%/doc/html/db2s0/sqls0658.htm,,1,
+SET CURRENT FUNCTION PATH,file:///%DB2PATH%/doc/html/db2s0/sqls0659.htm,,1,
+SET CURRENT PACKAGESET,file:///%DB2PATH%/doc/html/db2s0/sqls0660.htm,,1,
+SET CURRENT QUERY OPTIMIZATION,file:///%DB2PATH%/doc/html/db2s0/sqls0661.htm,,1,
+SET EVENT MONITOR STATE,file:///%DB2PATH%/doc/html/db2s0/sqls0665.htm,,1,
+SET transition-variable,file:///%DB2PATH%/doc/html/db2s0/sqls0666.htm,,1,
+SIGNAL SQLSTATE,file:///%DB2PATH%/doc/html/db2s0/sqls0667.htm,,1,
+UPDATE,file:///%DB2PATH%/doc/html/db2s0/sqls0668.htm,,1,
+VALUES,file:///%DB2PATH%/doc/html/db2s0/sqls0669.htm,,1,
+VALUES INTO,file:///%DB2PATH%/doc/html/db2s0/sqls0670.htm,,1,
+WHENEVER,file:///%DB2PATH%/doc/html/db2s0/sqls0671.htm,,1,
+GRANT (Schema Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0672.htm,,1,
+REVOKE (Schema Privileges),file:///%DB2PATH%/doc/html/db2s0/sqls0673.htm,,1,
+ALTER NODEGROUP,file:///%DB2PATH%/doc/html/db2s0/sqls0674.htm,,1,
+CREATE NODEGROUP,file:///%DB2PATH%/doc/html/db2s0/sqls0675.htm,,1,
+SET CURRENT RULES,file:///%DB2PATH%/doc/html/db2s0/sqls0676.htm,,1,
+SET CURRENT DEGREE,file:///%DB2PATH%/doc/html/db2s0/sqls0677.htm,,1,
+RENAME TABLE,file:///%DB2PATH%/doc/html/db2s0/sqls0678.htm,,1,
+CREATE BUFFERPOOL,file:///%DB2PATH%/doc/html/db2s0/sqls0679.htm,,1,
+ALTER BUFFERPOOL,file:///%DB2PATH%/doc/html/db2s0/sqls0680.htm,,1,
+SYSCAT.CHECKS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c01.htm,,4,
+SYSCAT.COLAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c02.htm,,4,
+SYSCAT.COLCHECKS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c03.htm,,4,
+SYSCAT.COLDIST,file:///%DB2PATH%/doc/html/db2s0/sqlx0c04.htm,,4,
+SYSCAT.COLUMNS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c05.htm,,4,
+SYSCAT.CONSTDEP,file:///%DB2PATH%/doc/html/db2s0/sqlx0c06.htm,,4,
+SYSCAT.DATATYPES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c07.htm,,4,
+SYSCAT.DBAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c08.htm,,4,
+SYSCAT.EVENTMONITORS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c09.htm,,4,
+SYSCAT.EVENTS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c10.htm,,4,
+SYSCAT.FUNCPARMS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c11.htm,,4,
+SYSCAT.FUNCTIONS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c12.htm,,4,
+SYSCAT.INDEXAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c13.htm,,4,
+SYSCAT.INDEXES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c14.htm,,4,
+SYSCAT.KEYCOLUSE,file:///%DB2PATH%/doc/html/db2s0/sqlx0c15.htm,,4,
+SYSCAT.NODEGROUPS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c16.htm,,4,
+SYSCAT.PACKAGEAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c17.htm,,4,
+SYSCAT.PACKAGEDEP,file:///%DB2PATH%/doc/html/db2s0/sqlx0c18.htm,,4,
+SYSCAT.PACKAGES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c19.htm,,4,
+SYSCAT.REFERENCES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c20.htm,,4,
+SYSCAT.SCHEMAAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c21.htm,,4,
+SYSCAT.SCHEMATA,file:///%DB2PATH%/doc/html/db2s0/sqlx0c22.htm,,4,
+SYSCAT.STATEMENTS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c23.htm,,4,
+SYSCAT.TABAUTH,file:///%DB2PATH%/doc/html/db2s0/sqlx0c24.htm,,4,
+SYSCAT.TABCONST,file:///%DB2PATH%/doc/html/db2s0/sqlx0c25.htm,,4,
+SYSCAT.TABLES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c26.htm,,4,
+SYSCAT.TABLESPACES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c27.htm,,4,
+SYSCAT.TRIGDEP,file:///%DB2PATH%/doc/html/db2s0/sqlx0c28.htm,,4,
+SYSCAT.TRIGGERS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c29.htm,,4,
+SYSCAT.VIEWDEP,file:///%DB2PATH%/doc/html/db2s0/sqlx0C30.htm,,4,
+SYSCAT.VIEWS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c31.htm,,4,
+SYSSTAT.COLDIST,file:///%DB2PATH%/doc/html/db2s0/sqlx0c32.htm,,4,
+SYSSTAT.COLUMNS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c33.htm,,4,
+SYSSTAT.FUNCTIONS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c34.htm,,4,
+SYSSTAT.INDEXES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c35.htm,,4,
+SYSSTAT.TABLES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c36.htm,,4,
+SYSCAT.NODEGROUPDEF,file:///%DB2PATH%/doc/html/db2s0/sqlx0c37.htm,,4,
+SYSCAT.PARTITIONMAPS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c38.htm,,4,
+SYSCAT.BUFFERPOOLS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c39.htm,,4,
+SYSCAT.BUFFERPOOLNODES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c40.htm,,4,
+SYSCAT.PROCEDURES,file:///%DB2PATH%/doc/html/db2s0/sqlx0c41.htm,,4,
+SYSCAT.PROCPARMS,file:///%DB2PATH%/doc/html/db2s0/sqlx0c42.htm,,4,
+CURRENT DATE,file:///%DB2PATH%/doc/html/db2s0/sqls031a.htm,hdrc2curdt,2,
+CURRENT DEGREE,file:///%DB2PATH%/doc/html/db2s0/sqls031b.htm,hdrc2curdg,2,
+CURRENT EXPLAIN MODE,file:///%DB2PATH%/doc/html/db2s0/sqls031c.htm,hdrc2curem,2,
+CURRENT EXPLAIN SNAPSHOT,file:///%DB2PATH%/doc/html/db2s0/sqls031d.htm,hdrc2cures,2,
+CURRENT FUNCTION PATH,file:///%DB2PATH%/doc/html/db2s0/sqls031e.htm,hdrc2curfp,2,
+CURRENT NODE,file:///%DB2PATH%/doc/html/db2s0/sqls031f.htm,hdrcurnod,2,
+CURRENT QUERY OPTIMIZATION,file:///%DB2PATH%/doc/html/db2s0/sqls031g.htm,hdrc2curqo,2,
+CURRENT SERVER,file:///%DB2PATH%/doc/html/db2s0/sqls031h.htm,hdrc2curse,2,
+CURRENT TIME,file:///%DB2PATH%/doc/html/db2s0/sqls031i.htm,hdrc2curtm,2,
+CURRENT TIMESTAMP,file:///%DB2PATH%/doc/html/db2s0/sqls031j.htm,hdrc2curts,2,
+CURRENT TIMEZONE,file:///%DB2PATH%/doc/html/db2s0/sqls031k.htm,hdrc2curtz,2,
+USER,file:///%DB2PATH%/doc/html/db2s0/sqls031l.htm,hdrch2user,2,
+BACKUP DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0002.htm,,16, 
+BIND,file:///%DB2PATH%/doc/html/db2n0/sqln0004.htm,,16, 
+CATALOG DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0006.htm,,16, 
+CATALOG DCS DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0008.htm,,16, 
+CHANGE DATABASE COMMENT,file:///%DB2PATH%/doc/html/db2n0/sqln0012.htm,,16, 
+CREATE DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0020.htm,,16, 
+CATALOG APPC NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0021.htm,,16, 
+INVOKE STORED PROCEDURE,file:///%DB2PATH%/doc/html/db2n0/sqln0022.htm,,16, 
+CATALOG TCP/IP NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0023.htm,,16, 
+GET SNAPSHOT,file:///%DB2PATH%/doc/html/db2n0/sqln0024.htm,,16, 
+CHANGE ISOLATION LEVEL,file:///%DB2PATH%/doc/html/db2n0/sqln0025.htm,,16, 
+GET MONITOR SWITCHES,file:///%DB2PATH%/doc/html/db2n0/sqln0026.htm,,16, 
+GET DBM MONITOR SWITCHES,file:///%DB2PATH%/doc/html/db2n0/sqln0027.htm,,16, 
+DROP DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0030.htm,,16, 
+EXPORT,file:///%DB2PATH%/doc/html/db2n0/sqln0034.htm,,16, 
+FORCE APPLICATION,file:///%DB2PATH%/doc/html/db2n0/sqln0036.htm,,16, 
+GET AUTHORIZATIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0042.htm,,16, 
+GET CONNECTION STATE,file:///%DB2PATH%/doc/html/db2n0/sqln0045.htm,,16, 
+GET DATABASE CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0046.htm,,16, 
+GET DATABASE MANAGER CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0048.htm,,16, 
+GET INSTANCE,file:///%DB2PATH%/doc/html/db2n0/sqln0058.htm,,16, 
+IMPORT,file:///%DB2PATH%/doc/html/db2n0/sqln0066.htm,,16, 
+LIST APPLICATIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0073.htm,,16, 
+MIGRATE DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0074.htm,,16, 
+LIST COMMAND OPTIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0075.htm,,16, 
+LIST DATABASE DIRECTORY,file:///%DB2PATH%/doc/html/db2n0/sqln0077.htm,,16, 
+LIST DCS APPLICATIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0079.htm,,16, 
+LIST INDOUBT TRANSACTIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0081.htm,,16, 
+PRECOMPILE PROGRAM,file:///%DB2PATH%/doc/html/db2n0/sqln0082.htm,,16, 
+LIST NODE DIRECTORY,file:///%DB2PATH%/doc/html/db2n0/sqln0083.htm,,16, 
+REORGANIZE TABLE,file:///%DB2PATH%/doc/html/db2n0/sqln0084.htm,,16, 
+LIST PACKAGES/TABLES,file:///%DB2PATH%/doc/html/db2n0/sqln0085.htm,,16, 
+RESET DATABASE CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0086.htm,,16, 
+QUIT,file:///%DB2PATH%/doc/html/db2n0/sqln0087.htm,,16, 
+RESET DATABASE MANAGER CONFIGURATION ,file:///%DB2PATH%/doc/html/db2n0/sqln0088.htm,,16, 
+REORGCHK,file:///%DB2PATH%/doc/html/db2n0/sqln0089.htm,,16, 
+RESET MONITOR,file:///%DB2PATH%/doc/html/db2n0/sqln0090.htm,,16, 
+TERMINATE,file:///%DB2PATH%/doc/html/db2n0/sqln0091.htm,,16, 
+RESTART DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0092.htm,,16, 
+UPDATE COMMAND OPTIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0093.htm,,16, 
+RESTORE DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0094.htm,,16, 
+UPDATE MONITOR SWITCHES,file:///%DB2PATH%/doc/html/db2n0/sqln0095.htm,,16, 
+ROLLFORWARD DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0096.htm,,16, 
+CATALOG IPX/SPX NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0097.htm,,16, 
+RUNSTATS,file:///%DB2PATH%/doc/html/db2n0/sqln0098.htm,,16, 
+CATALOG NETBIOS NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0099.htm,,16, 
+START DATABASE MANAGER,file:///%DB2PATH%/doc/html/db2n0/sqln0100.htm,,16, 
+STOP DATABASE MANAGER,file:///%DB2PATH%/doc/html/db2n0/sqln0102.htm,,16, 
+UNCATALOG DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0104.htm,,16, 
+UNCATALOG DCS DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0106.htm,,16, 
+UNCATALOG NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0108.htm,,16, 
+UPDATE DATABASE CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0110.htm,,16, 
+UPDATE DATABASE MANAGER CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0112.htm,,16, 
+CATALOG LOCAL NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0114.htm,,16, 
+REBIND,file:///%DB2PATH%/doc/html/db2n0/sqln0116.htm,,16, 
+LIST BACKUP/HISTORY,file:///%DB2PATH%/doc/html/db2n0/sqln0117.htm,,16, 
+PRUNE HISTORY,file:///%DB2PATH%/doc/html/db2n0/sqln0118.htm,,16, 
+UPDATE RECOVERY HISTORY FILE,file:///%DB2PATH%/doc/html/db2n0/sqln0120.htm,,16, 
+LOAD,file:///%DB2PATH%/doc/html/db2n0/sqln0128.htm,,16, 
+CATALOG GLOBAL DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0130.htm,,16, 
+SET CLIENT,file:///%DB2PATH%/doc/html/db2n0/sqln0132.htm,,16, 
+LOAD QUERY,file:///%DB2PATH%/doc/html/db2n0/sqln0133.htm,,16, 
+QUERY CLIENT,file:///%DB2PATH%/doc/html/db2n0/sqln0134.htm,,16, 
+LIST TABLESPACE CONTAINERS,file:///%DB2PATH%/doc/html/db2n0/sqln0135.htm,,16, 
+QUIESCE TABLESPACES FOR TABLE,file:///%DB2PATH%/doc/html/db2n0/sqln0136.htm,,16, 
+LIST TABLESPACES,file:///%DB2PATH%/doc/html/db2n0/sqln0137.htm,,16, 
+LIST DCS DIRECTORY,file:///%DB2PATH%/doc/html/db2n0/sqln0143.htm,,16, 
+ECHO,file:///%DB2PATH%/doc/html/db2n0/sqln0145.htm,,16, 
+HELP,file:///%DB2PATH%/doc/html/db2n0/sqln0147.htm,,16, 
+SET TABLESPACE CONTAINERS,file:///%DB2PATH%/doc/html/db2n0/sqln0156.htm,,16, 
+ATTACH,file:///%DB2PATH%/doc/html/db2n0/sqln0158.htm,,16, 
+DETACH,file:///%DB2PATH%/doc/html/db2n0/sqln0160.htm,,16, 
+REGISTER,file:///%DB2PATH%/doc/html/db2n0/sqln0168.htm,,16, 
+DEREGISTER,file:///%DB2PATH%/doc/html/db2n0/sqln0170.htm,,16, 
+CATALOG APPCLU NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0171.htm,,16, 
+CATALOG APPN NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0172.htm,,16, 
+SET RUNTIME DEGREE,file:///%DB2PATH%/doc/html/db2n0/sqln0177.htm,,16, 
+DESCRIBE,file:///%DB2PATH%/doc/html/db2n0/sqln0178.htm,,16, 
+CATALOG NAMED PIPE NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0179.htm,,16, 
+GET ADMIN CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0180.htm,,16, 
+RESET ADMIN CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0181.htm,,16, 
+UPDATE ADMIN CONFIGURATION,file:///%DB2PATH%/doc/html/db2n0/sqln0182.htm,,16, 
+LIST ACTIVE DATABASES,file:///%DB2PATH%/doc/html/db2n0/sqln0183.htm,,16, 
+DROP NODE VERIFY,file:///%DB2PATH%/doc/html/db2n0/sqln0402.htm,,16, 
+LIST NODEGROUPS,file:///%DB2PATH%/doc/html/db2n0/sqln0406.htm,,16, 
+LIST NODES,file:///%DB2PATH%/doc/html/db2n0/sqln0407.htm,,16, 
+REDISTRIBUTE NODEGROUP,file:///%DB2PATH%/doc/html/db2n0/sqln0408.htm,,16, 
+CATALOG ODBC DATA SOURCE,file:///%DB2PATH%/doc/html/db2n0/sqln0193.htm,,16, 
+LIST ODBC DATA SOURCES,file:///%DB2PATH%/doc/html/db2n0/sqln0194.htm,,16, 
+UNCATALOG ODBC DATA SOURCE,file:///%DB2PATH%/doc/html/db2n0/sqln0195.htm,,16, 
+INITIALIZE TAPE,file:///%DB2PATH%/doc/html/db2n0/sqln0196.htm,,16, 
+REWIND TAPE,file:///%DB2PATH%/doc/html/db2n0/sqln0197.htm,,16, 
+SET TAPE POSITION,file:///%DB2PATH%/doc/html/db2n0/sqln0198.htm,,16, 
+ACTIVATE DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0201.htm,,16, 
+DEACTIVATE DATABASE,file:///%DB2PATH%/doc/html/db2n0/sqln0202.htm,,16, 
+LIST DRDA INDOUBT TRANSACTIONS,file:///%DB2PATH%/doc/html/db2n0/sqln0205.htm,,16, 
+ADD NODE,file:///%DB2PATH%/doc/html/db2n0/sqln0401.htm,,16, 
+db2sampl,file:///%DB2PATH%/doc/html/db2n0/sqln0003.htm,,8,Create Sample Database
+db2start,file:///%DB2PATH%/doc/html/db2n0/sqln0017.htm,,8,Start DB2
+db2stop,file:///%DB2PATH%/doc/html/db2n0/sqln0019.htm,,8,Stop DB2
+db2drdat,file:///%DB2PATH%/doc/html/db2n0/sqln0129.htm,,8,DRDA Trace
+db2cidmg,file:///%DB2PATH%/doc/html/db2n0/sqln0121.htm,,8,Remote Database Migration 
+db2rbind,file:///%DB2PATH%/doc/html/db2n0/sqln0122.htm,,8,Rebind all Packages
+db2migdr,file:///%DB2PATH%/doc/html/db2n0/sqln0151.htm,,8,Local Database Directory Migration
+db2set,file:///%DB2PATH%/doc/html/db2n0/sqln0185.htm,,8,DB2 Profile Registry Command 
+db2sql92,file:///%DB2PATH%/doc/html/db2n0/sqln0186.htm,,8,SQL92 Compliant SQL Statement Processor
+db2trc,file:///%DB2PATH%/doc/html/db2n0/sqln0187.htm,,8,Trace 
+db2ckmig,file:///%DB2PATH%/doc/html/db2n0/sqln0188.htm,,8,Database Pre-migration Tool 
+db2cc,file:///%DB2PATH%/doc/html/db2n0/sqln0189.htm,,8,Start Control Center
+db2eva,file:///%DB2PATH%/doc/html/db2n0/sqln0203.htm,,8,Event Analyzer 
+db2vexp,file:///%DB2PATH%/doc/html/db2n0/sqln0204.htm,,8,Dynamic Visual Explain
+db2batch,file:///%DB2PATH%/doc/html/db2n0/sqln0212.htm,,8,Benchmark Tool 
+db2bfd,file:///%DB2PATH%/doc/html/db2n0/sqln0213.htm,,8,Bind File Description Tool 
+db2cli,file:///%DB2PATH%/doc/html/db2n0/sqln0214.htm,,8,DB2 Interactive CLI
+db2evmon,file:///%DB2PATH%/doc/html/db2n0/sqln0215.htm,,8,Event Monitor Productivity Tool 
+db2exfmt,file:///%DB2PATH%/doc/html/db2n0/sqln0216.htm,,8,Explain Table Format Tool 
+db2gov,file:///%DB2PATH%/doc/html/db2n0/sqln0217.htm,,8,DB2 Governor
+db2expln,file:///%DB2PATH%/doc/html/db2n0/sqln0218.htm,,8,DB2 SQL Explain Tool 
+db2ipxad,file:///%DB2PATH%/doc/html/db2n0/sqln0219.htm,,8,Get IPX/SPX Internetwork Address
+db2look,file:///%DB2PATH%/doc/html/db2n0/sqln0220.htm,,8,DB2 Statistics Extraction Tool
+db2tbst,file:///%DB2PATH%/doc/html/db2n0/sqln0221.htm,,8,Get Tablespace State 
+db2untag,file:///%DB2PATH%/doc/html/db2n0/sqln0222.htm,,8,Release Container Tag 
+db2empfa,file:///%DB2PATH%/doc/html/db2n0/sqln0223.htm,,8,Enable Multi-page File Allocation
+db2imigr,file:///%DB2PATH%/doc/html/db2n0/sqln0224.htm,,8,Instance Migration Tool
+db2icrt,file:///%DB2PATH%/doc/html/db2n0/sqln0226.htm,,8,Instance Creation Tool
+db2idrop,file:///%DB2PATH%/doc/html/db2n0/sqln0227.htm,,8,Instance Removal Tool
+db2ilist,file:///%DB2PATH%/doc/html/db2n0/sqln0228.htm,,8,List Instances
+db2iupdt,file:///%DB2PATH%/doc/html/db2n0/sqln0229.htm,,8,Update Instances
+db2split,file:///%DB2PATH%/doc/html/db2n0/sqln0230.htm,,8,Data Declustering Tool
+db2govlg,file:///%DB2PATH%/doc/html/db2n0/sqln0231.htm,,8,DB2 Governor Query
+db2autold,file:///%DB2PATH%/doc/html/db2n0/sqln0232.htm,,8,Autoloader
+sqluload,file:///%DB2PATH%/doc/html/db2b0/b0128api.htm,,32,Load
+sqleintr,file:///%DB2PATH%/doc/html/db2b0/b0070api.htm,,32,Interrupt
+sqluimpr,file:///%DB2PATH%/doc/html/db2b0/b0066api.htm,,32,Import
+sqluexpr,file:///%DB2PATH%/doc/html/db2b0/b0034api.htm,,32,Export
+sqlubkp,file:///%DB2PATH%/doc/html/db2b0/b0002api.htm,,32,Backup Database
+sqlabndx,file:///%DB2PATH%/doc/html/db2b0/b0004api.htm,,32,Bind
+sqlecadb,file:///%DB2PATH%/doc/html/db2b0/b0006api.htm,,32,Catalog Database
+sqlegdad,file:///%DB2PATH%/doc/html/db2b0/b0008api.htm,,32,Catalog DCS Database
+sqlectnd,file:///%DB2PATH%/doc/html/db2b0/b0010api.htm,,32,Catalog Node
+sqledcgd,file:///%DB2PATH%/doc/html/db2b0/b0012api.htm,,32,Change Database Comment
+sqledcls,file:///%DB2PATH%/doc/html/db2b0/b0014api.htm,,32,Close Database Directory Scan
+sqlegdcl,file:///%DB2PATH%/doc/html/db2b0/b0016api.htm,,32,Close DCS Directory Scan
+sqlencls,file:///%DB2PATH%/doc/html/db2b0/b0018api.htm,,32,Close Node Directory Scan
+sqlecrea,file:///%DB2PATH%/doc/html/db2b0/b0020api.htm,,32,Create Database
+sqlecran,file:///%DB2PATH%/doc/html/db2b0/b0233api.htm,,32,Create Database at Node
+sqlmonss,file:///%DB2PATH%/doc/html/db2b0/b0024api.htm,,32,Get Snapshot
+sqlmon,file:///%DB2PATH%/doc/html/db2b0/b0026api.htm,,32,Get/Update Monitor Switches
+sqlgdref,file:///%DB2PATH%/doc/html/db2b0/b0028api.htm,,32,Dereference Address
+sqledrpd,file:///%DB2PATH%/doc/html/db2b0/b0030api.htm,,32,Drop Database
+sqledpan,file:///%DB2PATH%/doc/html/db2b0/b0234api.htm,,32,Drop Database at Node
+sqlmonsz,file:///%DB2PATH%/doc/html/db2b0/b0032api.htm,,32,Estimate Size Required for sqlmonsf() Output Buffer
+sqlefrce,file:///%DB2PATH%/doc/html/db2b0/b0036api.htm,,32,Force Application
+sqlgaddr,file:///%DB2PATH%/doc/html/db2b0/b0040api.htm,,32,Get Address
+sqluadau,file:///%DB2PATH%/doc/html/db2b0/b0042api.htm,,32,Get Authorizations
+sqlfxdb,file:///%DB2PATH%/doc/html/db2b0/b0046api.htm,,32,Get Database Configuration
+sqlfxsys,file:///%DB2PATH%/doc/html/db2b0/b0048api.htm,,32,Get Database Manager Configuration
+sqlegdge,file:///%DB2PATH%/doc/html/db2b0/b0050api.htm,,32,Get DCS Directory Entry For Database
+sqlegdgt,file:///%DB2PATH%/doc/html/db2b0/b0052api.htm,,32,Get DCS Directory Entries
+sqlaintp,file:///%DB2PATH%/doc/html/db2b0/b0054api.htm,,32,Get Error Message
+sqlegins,file:///%DB2PATH%/doc/html/db2b0/b0058api.htm,,32,Get Instance
+sqledgne,file:///%DB2PATH%/doc/html/db2b0/b0060api.htm,,32,Get Next Database Directory Entry
+sqlengne,file:///%DB2PATH%/doc/html/db2b0/b0062api.htm,,32,Get Next Node Directory Entry
+sqleisig,file:///%DB2PATH%/doc/html/db2b0/b0068api.htm,,32,Install Signal Handler
+sqlemgdb,file:///%DB2PATH%/doc/html/db2b0/b0074api.htm,,32,Migrate Database
+sqledosd,file:///%DB2PATH%/doc/html/db2b0/b0076api.htm,,32,Open Database Directory Scan
+sqlegdsc,file:///%DB2PATH%/doc/html/db2b0/b0078api.htm,,32,Open DCS Directory Scan
+sqlenops,file:///%DB2PATH%/doc/html/db2b0/b0080api.htm,,32,Open Node Directory Scan
+sqlaprep,file:///%DB2PATH%/doc/html/db2b0/b0082api.htm,,32,Precompile Program
+sqlureot,file:///%DB2PATH%/doc/html/db2b0/b0084api.htm,,32,Reorganize Table
+sqlfrdb,file:///%DB2PATH%/doc/html/db2b0/b0086api.htm,,32,Reset Database Configuration
+sqlfrsys,file:///%DB2PATH%/doc/html/db2b0/b0088api.htm,,32,Reset Database Manager Configuration
+sqlmrset,file:///%DB2PATH%/doc/html/db2b0/b0090api.htm,,32,Reset Monitor
+sqlerstd,file:///%DB2PATH%/doc/html/db2b0/b0092api.htm,,32,Restart Database
+sqlurst,file:///%DB2PATH%/doc/html/db2b0/b0094api.htm,,32,Restore Database
+sqluroll,file:///%DB2PATH%/doc/html/db2b0/b0096api.htm,,32,Rollforward Database
+sqlustat,file:///%DB2PATH%/doc/html/db2b0/b0098api.htm,,32,Runstats
+sqlepstart,file:///%DB2PATH%/doc/html/db2b0/b0100api.htm,,32,Start Database Manager
+sqlepstp,file:///%DB2PATH%/doc/html/db2b0/b0102api.htm,,32,Stop Database Manager
+sqleuncd,file:///%DB2PATH%/doc/html/db2b0/b0104api.htm,,32,Uncatalog Database
+sqlegdel,file:///%DB2PATH%/doc/html/db2b0/b0106api.htm,,32,Uncatalog DCS Database
+sqleuncn,file:///%DB2PATH%/doc/html/db2b0/b0108api.htm,,32,Uncatalog Node
+sqlfudb,file:///%DB2PATH%/doc/html/db2b0/b0110api.htm,,32,Update Database Configuration
+sqlfusys,file:///%DB2PATH%/doc/html/db2b0/b0112api.htm,,32,Update Database Manager Configuration
+sqlarbnd,file:///%DB2PATH%/doc/html/db2b0/b0116api.htm,,32,Rebind
+sqluhprn,file:///%DB2PATH%/doc/html/db2b0/b0118api.htm,,32,Prune Recovery History File
+sqluhupd,file:///%DB2PATH%/doc/html/db2b0/b0120api.htm,,32,Update Recovery History File
+sqluhops,file:///%DB2PATH%/doc/html/db2b0/b0122api.htm,,32,Open Recovery History File Scan
+sqluvget,file:///%DB2PATH%/doc/html/db2b0/b0208api.htm,,32,Reading Data from Device
+sqluhgne,file:///%DB2PATH%/doc/html/db2b0/b0124api.htm,,32,Get Next Recovery History File Entry
+sqluhcls,file:///%DB2PATH%/doc/html/db2b0/b0126api.htm,,32,Close Recovery History File Scan
+sqlesetc,file:///%DB2PATH%/doc/html/db2b0/b0132api.htm,,32,Set Client
+sqleqryc,file:///%DB2PATH%/doc/html/db2b0/b0134api.htm,,32,Query Client
+sqluvqdp,file:///%DB2PATH%/doc/html/db2b0/b0136api.htm,,32,Quiesce Tablespaces for Table
+sqlbotsq,file:///%DB2PATH%/doc/html/db2b0/b0138api.htm,,32,Open Tablespace Query
+sqlbftpq,file:///%DB2PATH%/doc/html/db2b0/b0140api.htm,,32,Fetch Tablespace Query
+sqlbctsq,file:///%DB2PATH%/doc/html/db2b0/b0142api.htm,,32,Close Tablespace Query
+sqlbmtsq,file:///%DB2PATH%/doc/html/db2b0/b0144api.htm,,32,Tablespace Query
+sqlbotcq,file:///%DB2PATH%/doc/html/db2b0/b0146api.htm,,32,Open Tablespace Container Query
+sqlbftcq,file:///%DB2PATH%/doc/html/db2b0/b0148api.htm,,32,Fetch Tablespace Container Query
+sqlbctcq,file:///%DB2PATH%/doc/html/db2b0/b0150api.htm,,32,Close Tablespace Container Query
+sqlbtcq,file:///%DB2PATH%/doc/html/db2b0/b0152api.htm,,32,Tablespace Container Query
+sqlbgtss,file:///%DB2PATH%/doc/html/db2b0/b0154api.htm,,32,Get Tablespace Statistics
+sqlbstpq,file:///%DB2PATH%/doc/html/db2b0/b0155api.htm,,32,Single Tablespace Query
+sqlbstsc,file:///%DB2PATH%/doc/html/db2b0/b0156api.htm,,32,Set Tablespace Containers
+sqlefmem,file:///%DB2PATH%/doc/html/db2b0/b0157api.htm,,32,Free Memory
+sqleatin,file:///%DB2PATH%/doc/html/db2b0/b0158api.htm,,32,Attach
+sqledtin,file:///%DB2PATH%/doc/html/db2b0/b0160api.htm,,32,Detach
+sqlesact,file:///%DB2PATH%/doc/html/db2b0/b0162api.htm,,32,Set Accounting String
+sqlfddb,file:///%DB2PATH%/doc/html/db2b0/b0164api.htm,,32,Get Database Configuration Defaults
+sqlfdsys,file:///%DB2PATH%/doc/html/db2b0/b0166api.htm,,32,Get Database Manager Configuration Defaults
+sqleregs,file:///%DB2PATH%/doc/html/db2b0/b0168api.htm,,32,Register
+sqledreg,file:///%DB2PATH%/doc/html/db2b0/b0170api.htm,,32,Deregister
+sqlgmcpy,file:///%DB2PATH%/doc/html/db2b0/b0176api.htm,,32,Copy Memory
+sqlesdeg,file:///%DB2PATH%/doc/html/db2b0/b0177api.htm,,32,Set Runtime Degree
+sqlogstt,file:///%DB2PATH%/doc/html/db2b0/b0190api.htm,,32,Get SQLSTATE Message
+sqluqry,file:///%DB2PATH%/doc/html/db2b0/b0192api.htm,,32,Load Query
+sqle_activate_db,file:///%DB2PATH%/doc/html/db2b0/b0201api.htm,,32,Activate Database
+sqle_deactivate_db,file:///%DB2PATH%/doc/html/db2b0/b0202api.htm,,32,Deactivate Database
+sqlcspqy,file:///%DB2PATH%/doc/html/db2b0/b0205api.htm,,32,List DRDA Indoubt Transactions
+sqlurlog,file:///%DB2PATH%/doc/html/db2b0/b0206api.htm,,32,Asynchronous Read Log
+sqluvint,file:///%DB2PATH%/doc/html/db2b0/b0207api.htm,,32,Initialize and Link to Device
+sqluvput,file:///%DB2PATH%/doc/html/db2b0/b0209api.htm,,32,Writing Data to Device
+sqluvend,file:///%DB2PATH%/doc/html/db2b0/b0210api.htm,,32,Unlink the Device and Release its Resources
+sqluvdel,file:///%DB2PATH%/doc/html/db2b0/b0211api.htm,,32,Delete Committed Session
+sqleaddn,file:///%DB2PATH%/doc/html/db2b0/b0401api.htm,,32,Add Node
+sqledrpn,file:///%DB2PATH%/doc/html/db2b0/b0402api.htm,,32,Drop Node Verify
+sqlugrpn,file:///%DB2PATH%/doc/html/db2b0/b0404api.htm,,32,Get Row Partitioning Number
+sqlugtpi,file:///%DB2PATH%/doc/html/db2b0/b0405api.htm,,32,Get Table Partitioning Information
+sqludrdt,file:///%DB2PATH%/doc/html/db2b0/b0408api.htm,,32,Redistribute Nodegroup
+sqleAttachToCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Attach to Context
+sqleBeginCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Create and Attach to an Application Context
+sqleDetachFromCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Detach From Context
+sqleEndCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Detach and Destroy Application Context
+sqleGetCurrentCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Get Current Context
+sqleInterruptCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Interrupt Context
+sqleSetTypeCtx,file:///%DB2PATH%/doc/html/db2b0/b0thrscr.htm,,32,Set Application Context Type
+sqlxhcom,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,32,Commit an Indoubt Transaction
+sqlxhfrg,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,32,Forget Transaction Status
+sqlxhqry,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,32,List Indoubt Transactions
+sqlxhrol,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,32,Roll Back an Indoubt Transaction
+SQLUEXPT-OUT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64, 
+SQLUIMPT-OUT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-IPXSPX,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-START-OPTIONS,file:///%DB2PATH%/doc/html/db2b0/b0574dat.htm,,64,
+SQLM-COLLECTED,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLM-RECORDING-GROUP,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLMA,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLB-TBSPQRY-DATA,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLB-TBSCONTQRY-DATA,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLB-TBS-STATS,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLU-MEDIA-LIST,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-CONN-SETTING,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLULOAD-IN,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLULOAD-OUT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+RFWD-INPUT,file:///%DB2PATH%/doc/html/db2b0/b0577dat.htm,,64,
+RFWD-OUTPUT,file:///%DB2PATH%/doc/html/db2b0/b0578dat.htm,,64,
+SQLA-FLAGINFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-REG-NWBINDERY,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLU-TABLESPACE-BKRST-LIST,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLUHINFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLU-LSN,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLU-RLOG-INFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLXA-RECOVER,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLXA-XID,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-LOCAL,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+DB2-INFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+VENDOR-INFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+INIT-INPUT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+INIT-OUTPUT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+DATA,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+RETURN-CODE,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLEDBSTOPOPT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQL-AUTHORIZATIONS,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLEDBCOUNTRYINFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-CPIC,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-NETB,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-STRUCT,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLE-NODE-TCPIP,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLCA,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLCHAR,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLDCOL,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQL-DIR-ENTRY,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLEDBDESC,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLEDINFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLENINFO,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLFUPD,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLUPI,file:///%DB2PATH%/doc/html/db2b0/b0trascr.htm,,64,
+SQLDA,file:///%DB2PATH%/doc/html/db2s0/sqls0sda.htm,,64,
+SQLE-ADDN-OPTIONS,file:///%DB2PATH%/doc/html/db2b0/b0581dat.htm,,64,
+SQLE-NODE-APPC,file:///%DB2PATH%/doc/html/db2b0/b0579dat.htm,,64,
+SQLE-NODE-APPN,file:///%DB2PATH%/doc/html/db2b0/b0580dat.htm,,64,
+SQLE-NODE-NPIPE,file:///%DB2PATH%/doc/html/db2b0/b0576dat.htm,,64,
+SQLOPT,file:///%DB2PATH%/doc/html/db2b0/b0522dat.htm,,64,
+SQLUIMPT-IN,file:///%DB2PATH%/doc/html/db2b0/b0526dat.htm,,64,
+SQLDescribeParam,file:///%DB2PATH%/doc/html/db2l0/sqll1420.htm,,128,
+SQLBrowseConnect,file:///%DB2PATH%/doc/html/db2l0/sqll1402.htm,,128,
+SQLCloseCursor,file:///%DB2PATH%/doc/html/db2l0/sqll1403.htm,,128,
+SQLColAttribute,file:///%DB2PATH%/doc/html/db2l0/sqll1404.htm,,128,
+SQLCopyDesc,file:///%DB2PATH%/doc/html/db2l0/sqll1405.htm,,128,
+SQLFetchScroll,file:///%DB2PATH%/doc/html/db2l0/sqll1407.htm,,128,
+SQLAllocHandle,file:///%DB2PATH%/doc/html/db2l0/sqll1401.htm,,128,
+SQLFreeHandle,file:///%DB2PATH%/doc/html/db2l0/sqll1408.htm,,128,
+SQLGetConnectAttr,file:///%DB2PATH%/doc/html/db2l0/sqll1409.htm,,128,
+SQLGetDescRec,file:///%DB2PATH%/doc/html/db2l0/sqll1411.htm,,128,
+SQLEndTran,file:///%DB2PATH%/doc/html/db2l0/sqll1406.htm,,128,
+SQLGetDiagField,file:///%DB2PATH%/doc/html/db2l0/sqll1412.htm,,128,
+SQLGetDiagRec,file:///%DB2PATH%/doc/html/db2l0/sqll1413.htm,,128,
+SQLSetConnectAttr,file:///%DB2PATH%/doc/html/db2l0/sqll1415.htm,,128,
+SQLGetDescField,file:///%DB2PATH%/doc/html/db2l0/sqll1410.htm,,128,
+SQLSetDescField,file:///%DB2PATH%/doc/html/db2l0/sqll1416.htm,,128,
+SQLSetDescRec,file:///%DB2PATH%/doc/html/db2l0/sqll1417.htm,,128,
+SQLSetPos,file:///%DB2PATH%/doc/html/db2l0/sqll1418.htm,,128,
+SQLGetStmtAttr,file:///%DB2PATH%/doc/html/db2l0/sqll1414.htm,,128,
+SQLAllocStmt,file:///%DB2PATH%/doc/html/db2l0/sqll1303.htm,,128,
+SQLBindCol,file:///%DB2PATH%/doc/html/db2l0/sqll1304.htm,,128,
+SQLBindFileToCol,file:///%DB2PATH%/doc/html/db2l0/sqll1305.htm,,128,
+SQLBindFileToParam,file:///%DB2PATH%/doc/html/db2l0/sqll1306.htm,,128,
+SQLBindParameter,file:///%DB2PATH%/doc/html/db2l0/sqll1307.htm,,128,
+SQLCancel,file:///%DB2PATH%/doc/html/db2l0/sqll1308.htm,,128,
+SQLColAttributes,file:///%DB2PATH%/doc/html/db2l0/sqll1309.htm,,128,
+SQLColumnPrivileges,file:///%DB2PATH%/doc/html/db2l0/sqll1310.htm,,128,
+SQLColumns,file:///%DB2PATH%/doc/html/db2l0/sqll1311.htm,,128,
+SQLConnect,file:///%DB2PATH%/doc/html/db2l0/sqll1312.htm,,128,
+SQLDataSources,file:///%DB2PATH%/doc/html/db2l0/sqll1313.htm,,128,
+SQLDescribeCol,file:///%DB2PATH%/doc/html/db2l0/sqll1314.htm,,128,
+SQLDisconnect,file:///%DB2PATH%/doc/html/db2l0/sqll1315.htm,,128,
+SQLDriverConnect,file:///%DB2PATH%/doc/html/db2l0/sqll1316.htm,,128,
+SQLError,file:///%DB2PATH%/doc/html/db2l0/sqll1317.htm,,128,
+SQLExecDirect,file:///%DB2PATH%/doc/html/db2l0/sqll1318.htm,,128,
+SQLExecute,file:///%DB2PATH%/doc/html/db2l0/sqll1319.htm,,128,
+SQLExtendedFetch,file:///%DB2PATH%/doc/html/db2l0/sqll1320.htm,,128,
+SQLFetch,file:///%DB2PATH%/doc/html/db2l0/sqll1321.htm,,128,
+SQLForeignKeys,file:///%DB2PATH%/doc/html/db2l0/sqll1322.htm,,128,
+SQLFreeConnect,file:///%DB2PATH%/doc/html/db2l0/sqll1323.htm,,128,
+SQLFreeEnv,file:///%DB2PATH%/doc/html/db2l0/sqll1324.htm,,128,
+SQLFreeStmt,file:///%DB2PATH%/doc/html/db2l0/sqll1325.htm,,128,
+SQLGetConnectOption,file:///%DB2PATH%/doc/html/db2l0/sqll1326.htm,,128,
+SQLGetCursorName,file:///%DB2PATH%/doc/html/db2l0/sqll1327.htm,,128,
+SQLGetData,file:///%DB2PATH%/doc/html/db2l0/sqll1328.htm,,128,
+SQLGetEnvAttr,file:///%DB2PATH%/doc/html/db2l0/sqll1329.htm,,128,
+SQLGetFunctions,file:///%DB2PATH%/doc/html/db2l0/sqll1330.htm,,128,
+SQLGetInfo,file:///%DB2PATH%/doc/html/db2l0/sqll1331.htm,,128,
+SQLGetLength,file:///%DB2PATH%/doc/html/db2l0/sqll1332.htm,,128,
+SQLGetPosition,file:///%DB2PATH%/doc/html/db2l0/sqll1333.htm,,128,
+SQLGetSQLCA,file:///%DB2PATH%/doc/html/db2l0/sqll1334.htm,,128,
+SQLGetStmtOption,file:///%DB2PATH%/doc/html/db2l0/sqll1335.htm,,128,
+SQLGetSubString,file:///%DB2PATH%/doc/html/db2l0/sqll1336.htm,,128,
+SQLGetTypeInfo,file:///%DB2PATH%/doc/html/db2l0/sqll1337.htm,,128,
+SQLMoreResults,file:///%DB2PATH%/doc/html/db2l0/sqll1338.htm,,128,
+SQLNativeSql,file:///%DB2PATH%/doc/html/db2l0/sqll1339.htm,,128,
+SQLNumParams,file:///%DB2PATH%/doc/html/db2l0/sqll1340.htm,,128,
+SQLNumResultCols,file:///%DB2PATH%/doc/html/db2l0/sqll1341.htm,,128,
+SQLParamData,file:///%DB2PATH%/doc/html/db2l0/sqll1342.htm,,128,
+SQLParamOptions,file:///%DB2PATH%/doc/html/db2l0/sqll1343.htm,,128,
+SQLPrepare,file:///%DB2PATH%/doc/html/db2l0/sqll1344.htm,,128,
+SQLPrimaryKeys,file:///%DB2PATH%/doc/html/db2l0/sqll1345.htm,,128,
+SQLProcedureColumns,file:///%DB2PATH%/doc/html/db2l0/sqll1346.htm,,128,
+SQLProcedures,file:///%DB2PATH%/doc/html/db2l0/sqll1347.htm,,128,
+SQLPutData,file:///%DB2PATH%/doc/html/db2l0/sqll1348.htm,,128,
+SQLRowCount,file:///%DB2PATH%/doc/html/db2l0/sqll1349.htm,,128,
+SQLSetColAttributes,file:///%DB2PATH%/doc/html/db2l0/sqll1350.htm,,128,
+SQLSetConnection,file:///%DB2PATH%/doc/html/db2l0/sqll1351.htm,,128,
+SQLSetConnectOption,file:///%DB2PATH%/doc/html/db2l0/sqll1352.htm,,128,
+SQLSetCursorName,file:///%DB2PATH%/doc/html/db2l0/sqll1353.htm,,128,
+SQLSetEnvAttr,file:///%DB2PATH%/doc/html/db2l0/sqll1354.htm,,128,
+SQLSetParam,file:///%DB2PATH%/doc/html/db2l0/sqll1355.htm,,128,
+SQLSetStmtOption,file:///%DB2PATH%/doc/html/db2l0/sqll1356.htm,,128,
+SQLSpecialColumns,file:///%DB2PATH%/doc/html/db2l0/sqll1357.htm,,128,
+SQLStatistics,file:///%DB2PATH%/doc/html/db2l0/sqll1358.htm,,128,
+SQLTablePrivileges,file:///%DB2PATH%/doc/html/db2l0/sqll1359.htm,,128,
+SQLTables,file:///%DB2PATH%/doc/html/db2l0/sqll1360.htm,,128,
+SQLTransact,file:///%DB2PATH%/doc/html/db2l0/sqll1361.htm,,128,
+SQLAllocConnect,file:///%DB2PATH%/doc/html/db2l0/sqll1301.htm,,128,
+SQLAllocEnv,file:///%DB2PATH%/doc/html/db2l0/sqll1302.htm,,128,

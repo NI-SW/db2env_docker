@@ -1,0 +1,19 @@
+#!/bin/ksh
+###############################################################################
+#
+#  Source File Name = db2jdbcbind
+#
+#  5765172 (C) COPYRIGHT International Business Machines Corp. 1998
+#  All Rights Reserved
+#  Licensed Materials - Property of IBM
+#
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#  Function = Korn Shell Script:
+#               JDBC Package Binder utility
+#
+#  Operating System: Bourne Shell Script
+#
+###############################################################################
+java com.ibm.db2.jcc.DB2Binder "$@"

@@ -1,0 +1,233 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2gateways
+#
+# FUNCTION: db2gateways returns the list of pingable gateway in the
+#           routing table using appropriate option [-get] and updates the 
+#           routing table using appropriate option [-update] 
+#
+# RETURN:
+#         0  Some working gateway are found
+#           The ouput format is
+#              "!REQD %interfaceName% %ip%"
+#
+#         1 No working gateway are found
+#                NOGATEWAY
+#
+#
+# db2gateways is supplied as-is as an example of how to perform this function.
+# There is no warranty or support.
+##############################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+usage(){
+cat <<EOF
+
+ Usage: $progname <options>
+        -h|-help      - help page
+        -g|-get       - Get gateway IP from routing table
+        -u|-update    - Update the gateway IP to routing table
+
+ Example: db2gateway -get - Gets gateway IP from routing table
+ Example: db2gateway -update -gateway_ip <IP Address> -dev <Device Name> - Updates the IP to routing table
+
+EOF
+}
+
+get_gateway ()
+{
+
+# The Flag 'UG' mean route up and operational and the route entry use a gateway.
+# The gateway is the second column value
+
+#Retrive the IPv4 routing table on linux.
+IPv4=`/bin/netstat --route --protocol=inet --numeric 2>/dev/null`
+
+#Retrive the IPv6 routing table on linux.
+IPv6=`/bin/netstat --route --protocol=inet6 --numeric 2>/dev/null` 
+
+#On linux 8th column is the Interface Name on IPv4 
+Gateways=`echo "${IPv4}" | awk '
+                /UG/ {
+                        if ( ( $2 !~ /127\.0\.0\./ ) && ( $2 !~ /::1/ ) )
+                        {
+                            print $8 " " $2 
+                        }
+                     }
+                '`
+
+#On linux 7th column is the Interface Name on IPv6 
+IPv6Gateways=`echo "${IPv6}" | awk '
+                /UG/ {
+                        if ( ( $2 !~ /127\.0\.0\./ ) && ( $2 !~ /::1/ ) )
+                        {
+                            print $7 " " $2 
+                        }
+                     }
+                '`
+
+#The line format is !REQD %interfaceName% %ip%
+
+pingcmd=""
+pingcmd=`which ping`
+
+# for each gateway found check if it's pingable
+Gateways=`echo "${Gateways}" | sort -u | while read ifname ip 
+do
+	 ${pingcmd} -c 1 ${ip} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]
+         then
+     	    echo "!REQD ${ifname} ${ip}"
+         fi
+done`
+
+# check IPv6 Gateways
+# on Linux we need to use 'ping6' command
+pingcmd=`which ping6`
+
+IPv6Gateways=`echo "${IPv6Gateways}" | sort -u | while read ifname ip 
+do
+    ${pingcmd} -c 1 ${ip} 2>/dev/null 1>/dev/null
+   if [ $? -eq 0 ]
+   then
+        echo "!REQD ${ifname} ${ip}"
+   fi
+done`
+
+if [ "${IPv6Gateways}" ]
+then
+   if [ "${Gateways}" ]
+   then
+      Gateways=`echo "${Gateways}; echo ${IPv6Gateways}"`
+   else
+      Gateways=`echo "${IPv6Gateways}"`
+   fi
+fi
+
+#if not gateway was found or was pingable report it.
+if [ "${Gateways}" ]
+then
+   echo "${Gateways}"
+   exit 0   
+else 
+   echo "NOGATEWAY"
+   exit 1
+fi
+
+}
+
+linux_flavor ()
+{
+    set ${setopts?}
+        flavor=""
+        #Query oslevel
+    if [ -f "/etc/redhat-release" ]; then
+        `cat /etc/redhat-release | grep 'Red Hat'  1>/dev/null 2>/dev/null`
+        rc=$?
+
+        if [ $rc -eq 0 ];then
+            flavor=0
+            echo "$flavor"
+        else
+                echo "Unsupported Platform"
+        fi
+    fi
+    if [ -f "/etc/SuSE-release" ]; then
+        `cat /etc/SuSE-release | grep 'SUSE'  1>/dev/null 2>/dev/null`
+        rc=$?
+        if [ $rc -eq 0 ];then
+           flavor=1
+           echo "$flavor"
+        else
+           echo "Unsupported Platform"
+        fi
+    fi
+    return $flavor
+}
+
+update_gateway ()
+{
+    if [ $# -lt 5 ]; then
+       echo "Usage: $0 -update -gateway_ip <IP Address> -dev <Device Name>"
+       exit 67
+    fi
+    platform=`linux_flavor`
+
+    if [ $platform -eq 1 ];then
+               ROUTINGFILE="/etc/rc.d/boot.local"
+       else
+               ROUTINGFILE="/etc/rc.d/rc.local"
+    fi
+    if [ -f ${ROUTINGFILE?} ]; then
+       `echo "/sbin/ip route add $3 dev $5 " >> "${ROUTINGFILE?}"`
+       `/sbin/ip route add default via  $3 dev $5`
+
+        if [ $? -eq 0  -o  $? -eq 2 ]; then
+            echo "Routing table has been updated successfully with default gateway"
+#           display_msg ${DB2CAT?} 70 'DBI1070I: Program %s completed successfully.\n' ${PROGNAME?}
+        else
+            echo " Failed to update the Routing table"
+        fi
+
+    else
+       echo "Unable to find $ROUTINGFILE file"
+    fi
+}
+
+initialization ()
+{
+        set ${setopts?}
+        GET_OPTION=false
+        UPDATE_OPTION=false
+        ROUTINGFILE=""
+}
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+set ${setopts?}
+
+initialization # Set up environment
+var=0
+option="${1}"
+
+# Process command-line options
+
+            case ${option} in
+                -h|-help) helppage=true;;
+                -g|-get) GET_OPTION=true;;
+                -u|-update) UPDATE_OPTION=true;;
+            esac
+
+if [ "$helppage" == "true" ]; then
+   usage
+   exit
+fi
+
+if [ "$GET_OPTION" == "true" ]; then
+   get_gateway
+   exit
+fi
+
+if [ "$UPDATE_OPTION" == "true" ]; then
+   update_gateway $@
+   exit
+fi
+

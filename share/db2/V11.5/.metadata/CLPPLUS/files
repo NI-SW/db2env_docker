@@ -1,0 +1,14 @@
+.metadata/CLPPLUS/files:
+.metadata/CLPPLUS/spec:406
+bin/clpplus:12032
+desktop/icons/clpplus.xpm:16562
+desktop/prop/clpplus.properties:618
+tools/JSON4J_Apache.jar:69517
+tools/antlr-3.3-java.jar:1352654
+tools/apache-mime4j-0.6.jar:345035
+tools/clpplus.jar:1435771
+tools/commons-logging-1.1.3.jar:62050
+tools/httpclient-4.3.1.jar:585603
+tools/httpcore-4.3.jar:282160
+tools/httpmime-4.3.1.jar:37078
+tools/jline-0.9.93.jar:87325

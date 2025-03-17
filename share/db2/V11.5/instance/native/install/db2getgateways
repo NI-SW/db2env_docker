@@ -1,0 +1,109 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2getgateways
+#
+# FUNCTION: db2getgateways return the list of pingable gateway in the 
+#           routing table.
+#
+# RETURN: 
+#         0  Some working gateway are found
+#           The ouput format is 
+#              "!REQD %interfaceName% %ip%"
+#             
+#         1 No working gateway are found
+#                NOGATEWAY
+#              
+#
+# getgateways is supplied as-is as an example of how to perform this function.
+# There is no warranty or support.
+##############################################################################
+
+# The Flag 'UG' mean route up and operational and the route entry use a gateway.
+# The gateway is the second column value
+
+#Retrive the IPv4 routing table on linux.
+IPv4=`/bin/netstat --route --protocol=inet --numeric 2>/dev/null`
+
+#Retrive the IPv6 routing table on linux.
+IPv6=`/bin/netstat --route --protocol=inet6 --numeric 2>/dev/null` 
+
+#On linux 8th column is the Interface Name on IPv4 
+Gateways=`echo "${IPv4}" | awk '
+                /UG/ {
+                        if ( ( $2 !~ /127\.0\.0\./ ) && ( $2 !~ /::1/ ) )
+                        {
+                            print $8 " " $2 
+                        }
+                     }
+                '`
+
+#On linux 7th column is the Interface Name on IPv6 
+IPv6Gateways=`echo "${IPv6}" | awk '
+                /UG/ {
+                        if ( ( $2 !~ /127\.0\.0\./ ) && ( $2 !~ /::1/ ) )
+                        {
+                            print $7 " " $2 
+                        }
+                     }
+                '`
+
+#The line format is !REQD %interfaceName% %ip%
+
+pingcmd=""
+pingcmd=`which ping`
+
+# for each gateway found check if it's pingable
+Gateways=`echo "${Gateways}" | sort -u | while read ifname ip 
+do
+	 ${pingcmd} -c 1 ${ip} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]
+         then
+     	    echo "!REQD ${ifname} ${ip}"
+         fi
+done`
+
+# check IPv6 Gateways
+# on Linux we need to use 'ping6' command
+pingcmd=`which ping6`
+
+IPv6Gateways=`echo "${IPv6Gateways}" | sort -u | while read ifname ip 
+do
+    ${pingcmd} -c 1 ${ip} 2>/dev/null 1>/dev/null
+   if [ $? -eq 0 ]
+   then
+        echo "!REQD ${ifname} ${ip}"
+   fi
+done`
+
+if [ "${IPv6Gateways}" ]
+then
+   if [ "${Gateways}" ]
+   then
+      Gateways=`echo "${Gateways}; echo ${IPv6Gateways}"`
+   else
+      Gateways=`echo "${IPv6Gateways}"`
+   fi
+fi
+
+#if not gateway was found or was pingable report it.
+if [ "${Gateways}" ]
+then
+   echo "${Gateways}"
+   exit 0   
+else 
+   echo "NOGATEWAY"
+   exit 1
+fi

@@ -1,0 +1,95 @@
+%1  Database '%2' upgrade to DB2/2 %3 failed. SQLCODE = %4.
+%1  No Database name provided for database upgrade.
+No database name provided for package revalidation.
+No database name provided.
+Database: '%1'
+  Object name: '%1'
+  Object type: '%1'
+  Bad (reserved) schema-name: '%1'
+Package '%1' of database '%2' failed to revalidate.
+SYSADM authority is required to execute db2ckupgrade. 
+Database '%1' does not exist. Rebind has not been done.
+Database Manager cannot be started.
+Cannot open log file: '%1'
+  SQL1013N The database alias name or database name '%1' could not be found.  SQLSTATE=42705
+Incorrect number of arguments for the command.
+An unexpected argument '%1' was found in the command.
+Bindfile '%1' could not be opened.
+SQL1403N The username and/or password supplied is incorrect.  SQLSTATE=08004
+db2ckupgrade was successful. Database(s) can be upgraded.
+  SQL1116N A connection to or activation for database "%1" cannot be made because of BACKUP PENDING.  SQLSTATE= 57019
+  SQL1117N A connection to or activation for database "%1" cannot be made because of ROLL-FORWARD PENDING.  SQLSTATE=57019
+  SQL1015N The database is in an inconsistent state.  SQLSTATE=55025
+  Database cannot be connected.
+No local database found.  No database has been processed.
+  ** ERROR **
+  ** WARNING **
+  Authentication mismatch.
+  Estimated disk space required for upgrade is %1 MBytes.
+Token after '%1' cannot be more than %2 bytes.
+Database name is too long.
+Accessing database directory failed. SQLCODE = %1.
+  Database '%1' is not a local database. DB2CKUPGRADE has not executed for this database.
+CID upgrade invocation error.  The specified response file cannot not found.
+CID upgrade invocation error.  The specified response file has incorrect format.
+CID upgrade invocation syntax error.
+Database Manager is not started. CID upgrade database is not executed.
+DB2MIGDR [-l logfile] path [path path ...]
+         where -l      specifies that log file is provided.
+               logfile specifies a logfile file pathname.
+               path    specifies a target path where local database directory is located.
+  path "%1": database directory migration complete.
+  path "%1": database directory is corrupted.
+  path "%1": database directory access error.
+  path "%1": database directory files not found.
+  path "%1": existing DB2DDDIR.BAK file is corrupted.
+  path "%1": DB2DDDIR.BAK file access error.
+  path "%1": database directory already in the current level.
+  Database "%1": local database directory not found.
+  Database "%1": local database directory migration is needed.
+  Database "%1": database configuration file is corrupted.
+  Database "%1": database configuration file access error.
+  Database "%1": local database directory file access error.
+  Cannot open logfile "%1".
+  Pool table files access error
+  SQL0290N Tablespace '%1' is not in normal state: '%2'.  SQLSTATE=55039
+  Object is dependent on %1 and must be dropped.  
+  SQL0473N Bad (reserved) datatype name: '%1'.  SQLSTATE=42918
+  SQL1776N The command cannot be issued on an HADR standby database. Reason code = "%1".
+  Usage: db2rbind database-alias -l logfile [all -u userid -p password] [-r {conservative|any}].
+  Rebind done successfully for database '%1'.
+Version of DB2CKUPGRADE being run: VERSION %1.
+  This view references a system entity that has changed; this may affect upgrade.
+  SYSCAT DMS tablespace needs more space for upgrade.
+  An error occurred while accessing the database configuration file. 
+  Database is in restore pending state.
+  An error occurred while allocating memory.  Stmt: %1.
+  db2ckupgrade was unsuccessful. Please look at logfile for more details.
+  There is one or more warning messages in the log file. However, the database(s) can still be upgraded. 
+  System Database Directory does not exist.  No database has been processed. 
+  System Database Directory is empty.  No database has been processed.
+  SQL1768N Unable to start HADR. Reason code = "%1".
+  SQL1767N Start HADR cannot complete. Reason code = "%1".
+  SQL1769N Stop HADR cannot complete. Reason code = "%1".
+  Failed to deactivate database. SQLCODE = %1.
+  SQL1249N The DATALINK data type is not supported.  "%1" must be dropped or altered to avoid using the DATALINK data type.
+  SQL1344N Orphan rows found in the system catalogs.  Contact your technical service representative prior to attempting a upgrade.
+  ADM4100W The db2ckupgrade or UPGRADE DATABASE command identified external routines or user-defined wrappers that could have potential incompatibility with the multi-threaded database manager. See the file %1 that contains the list of routines and wrappers identified, or a set of statements to restore the routines or wrappers definition altered by the UPGRADE DATABASE command. 
+  An error occurred while opening the file: '%1' for write.
+  An error occurred writing to the '%1' file.
+  Beginning in DB2 Version 9.5, the database manager is now multi-threaded on UNIX and Linux platforms. To prevent potential problems that can occur due to the execution of thread unsafe code, all external NOT FENCED routines will be altered to FENCED and NOT THREADSAFE during database upgrade. The following is a list of all the affected routines in database '%1'. Once the routines are confirmed to be thread-safe, they can be altered back to NOT FENCED.
+  An error occurred while binding '%1' to database.
+  An error occurred while getting the routine's library name from '%1'. 
+  An error occurred while checking the library dependency of the routine: '%1'
+  An error occurred while setting the bypass flag for Query Patroller. SQLCODE = "%1".
+  The db2ckupgrade command must be issued on the downlevel instance prior to upgrading the instance. 
+  SQL1498W There are tables in the database that contain one or more type-1 indexes. To convert them to type-2 indexes, run the %1 CLP script prior to database upgrade.
+  SQL0553N An object cannot be created with the schema name "%1".
+  ADM4103W The connection attribute %1 contains asterisks (*) in the workload %2. A single asterisk (*) will be replaced with two asterisks (**) during database upgrade. Reason code = %3. 
+  ADM4102W The database contains one or more identifiers named NULL. To avoid conflict with the NULL keyword, you should qualify or delimit with double quotes any identifiers named NULL in SQL statements.
+  ADM4104E One or more databases are enabled for XML Extender. You must remove the XML Extender functionality from the instance and databases before upgrading. Please refer to the DB2 Information Center for details on the steps to upgrade XML Extender including how to disable XML Extender in databases.
+  ADM4105W The Database is enabled for DB2 WebSphere MQ functions. The set of functions defined for XML Extender will be dropped during database upgrade.
+  SQL1032N No start database manager command was issued.  SQLSTATE=57019
+  The database has one or more tables in load pending state.
+  The database has one or more tables in redistribute pending state.
+  Varchar2 compatibility database does not upgrade from DB2 Version 9.5, please contact an IBM Service Representative.

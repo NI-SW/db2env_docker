@@ -1,0 +1,396 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2ickts
+#
+# FUNCTION: db2ickts - checks if Text Search is running
+#
+# USAGE: db2ickts [-d] [-l log_file] [-t|-k|-s <Instance Name>]
+#               -d        debug mode selected
+#               -l        log file
+#               -t        check if text search is running [return 0 if yes]
+#               -k        check if token exists
+#               -s        stop db2 text search server on the specified instance
+#               InstName  is the name of the instance
+#
+# RETURN: 0 - success
+#         1 - failure
+#
+#########################################################################
+
+#-----------------------------------------------------------------------#
+#                    Variable and CONSTANTS Definition
+#-----------------------------------------------------------------------#
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+PROGNAME=`basename $0`       # Program name
+
+# Include common definition file
+if [ -f ${DB2DIR?}/instance/db2idefs ]; then
+    . ${DB2DIR?}/instance/db2idefs
+    MSGCOUNT=1   # Save log for db2ickts
+else
+    echo "File db2idefs not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+rc=1
+TRUE=0
+FALSE=1
+TMPDIR=${DB2TMPDIR:-/tmp}
+DB2INSTLOG="${TMPDIR?}/${PROGNAME?}.log.${PROCID?}"   # Default log file
+TMPFILE="${TMPDIR?}/${PROGNAME?}.tmp.${PROCID?}"
+get_locale
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+# To display the usage information
+usage ()
+{
+    echo "Usage: ${PROGNAME?} [-d] [-l log_file] [-t|-k|-s <Instance Name>]"
+    exit 1
+}
+
+# Default values for command line options
+defaultopts()
+{
+    TEXTSEARCH=${FALSE?}
+    TOKEN=${FALSE?}
+    STOP=${FALSE?}
+    DEBUG=${FALSE?} 
+}
+
+# Check if text search is running
+chkTss()
+{
+    trac chkTss $@
+    set ${setopts?}
+
+    chkTss_instname=$1
+    chkTss_rc=0
+
+    if [ "X${chkTss_instname?}" = "X" ]; then
+       usage
+    fi
+
+    instName=`echo ${chkTss_instname?} | sed 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/'`
+
+# in galileo, there is no more a cielock process to check, instead use db2ts cmds 
+#    ps -ef | grep "/cielock[ ][ ]*${instName?}[ ]*" >/dev/null 2>&1
+    db2ts_stop_verify ${chkTss_instname?};
+    if [ $? -eq 0 ]; then
+       chkTss_rc=1  #this means text search is verified as stopped
+    fi
+
+    trax chkTss
+    return ${chkTss_rc?}
+}
+
+# Check if token exists
+chkTok ()
+{
+    trac chkTok $@
+    set ${setopts?}
+
+    chkTok_instName=$1
+    chkTok_rc=1
+
+    if [ "X${chkTok_instName?}" = "X" ]; then
+       usage
+    fi
+
+    chkTok_insthome=`${DB2DIR?}/bin/db2usrinf -d ${chkTok_instName?}`
+    if [ ! -d "${chkTok_insthome?}" ]; then
+       if [ ${DEBUG?} -eq ${TRUE?} ]; then
+          dmsg "The HOME directory for instance ${chkTok_instName?} does not exist." 
+       fi
+       exit 1
+    fi
+
+    #cfgTool="${chkTok_insthome?}/sqllib/db2tss/bin/configTool"
+	cfgTool="${DB2DIR?}/db2tss/bin/configTool"
+    # this happens if the new copy of DB2 doesn't have Text Search anymore
+    # e.g., from copy1 (with TS) to copy2 (no TS)
+    if [ ! -f ${cfgTool?} ]; then
+       exit 1
+    fi
+
+    # Determine if this is a root or non-root install
+    if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+       NONROOT_INSTALL=${FALSE?}
+    else
+       NONROOT_INSTALL=${TRUE?}
+    fi
+USERSHELL=`${DB2DIR?}/bin/db2usrinf -s ${chkTok_instName?}`
+case ${USERSHELL?} in
+      *csh)
+         if [ ${NONROOT_INSTALL?} -eq ${FALSE?} ]; then
+            ${DB2DIR?}/instance/db2iexec -n ${chkTok_instName?} "${cfgTool?} printToken -configPath ${chkTok_insthome?}/sqllib/db2tss/config >& ${TMPFILE?}"
+         else
+            ${cfgTool?} printToken -configPath ${chkTok_insthome?}/sqllib/db2tss/config >& ${TMPFILE?}
+         fi
+         rc=$?
+         set token=`cat ${TMPFILE?}`
+         rm -f  ${TMPFILE?}
+         ;;
+      *)
+         if [ ${NONROOT_INSTALL?} -eq ${FALSE?} ]; then
+            token=`${DB2DIR?}/instance/db2iexec -n ${chkTok_instName?} "${cfgTool?} printToken -configPath ${chkTok_insthome?}/sqllib/db2tss/config 2>&1"`
+         else
+            token=`${cfgTool?} printToken -configPath ${chkTok_insthome?}/sqllib/db2tss/config 2>&1`
+         fi
+         rc=$?
+         ;;
+esac
+    if [ ${rc?} -eq 0 ]; then
+          chkTok_rc=0
+    else
+       if [ ${DEBUG?} -eq ${TRUE?} ]; then
+          dmsg ${token?}
+       fi
+    fi
+
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+       dmsg "configTool printToken -configPath ${chkTok_insthome?}/sqllib/db2tss/config"
+    fi
+
+    trax chkTok
+    return ${chkTok_rc?}
+}
+
+# Stop db2 text search server
+db2ts_stop ()
+{
+    trac db2ts_stop $@
+    set ${setopts?}
+
+    db2ts_stop_rc=0
+    db2ts_stop_instname=$1
+    if [ "X${db2ts_stop_instname?}" = "X" ]; then
+       usage
+    fi
+  
+    # Determine if this is a root or non-root install
+    if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+       NONROOT_INSTALL=${FALSE?}
+    else
+       NONROOT_INSTALL=${TRUE?}
+    fi
+
+       insthome=`${DB2DIR?}/bin/db2usrinf -d ${db2ts_stop_instname?}`
+       if [ ! -d "${insthome?}" ]; then
+          if [ ${DEBUG?} -eq ${TRUE?} ]; then
+             dmsg "The HOME directory for instance ${db2ts_stop_instname?} does not exist."
+          fi
+          exit 1
+       fi
+       
+       chkTss ${db2ts_stop_instname?}
+       if [ $? -eq 0 ]; then 
+          if [ ${NONROOT_INSTALL?} -eq ${FALSE?} ]; then
+             db2ts_stop_output=`${DB2DIR?}/instance/db2iexec -n ${db2ts_stop_instname?} "db2ts stop for text"`
+          else
+             db2ts_stop_output=`db2ts stop for text`
+          fi
+
+          if [ $? -ne 0 ]; then
+             db2ts_stop_rc=1
+             if [ ${DEBUG?} -eq ${TRUE?} ]; then
+                dmsg "${db2ts_stop_output?}"
+             fi
+          fi
+       fi
+
+    trax db2ts_stop
+    return ${db2ts_stop_rc?}
+}
+
+# Verify that  db2 text search server is stopped
+db2ts_stop_verify ()
+{
+    trac db2ts_stop_verify $@
+    set ${setopts?}
+
+    db2ts_stop_rc=0
+    db2ts_stop_instname=$1
+    if [ "X${db2ts_stop_instname?}" = "X" ]; then
+       usage
+    fi
+  
+    # Determine if this is a root or non-root install
+    if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+       NONROOT_INSTALL=${FALSE?}
+    else
+       NONROOT_INSTALL=${TRUE?}
+    fi
+
+    insthome=`${DB2DIR?}/bin/db2usrinf -d ${db2ts_stop_instname?}`
+    if [ ! -d "${insthome?}" ]; then
+       if [ ${DEBUG?} -eq ${TRUE?} ]; then
+          dmsg "The HOME directory for instance ${db2ts_stop_instname?} does not exist."
+       fi
+       exit 1
+    fi
+       
+    if [ ${NONROOT_INSTALL?} -eq ${FALSE?} ]; then
+       db2ts_stop_output=`${DB2DIR?}/instance/db2iexec -n ${db2ts_stop_instname?} "db2ts stop for text verify"`
+    else
+       db2ts_stop_output=`db2ts stop for text verify`
+    fi
+
+    if [ $? -ne 0 ]; then
+       db2ts_stop_rc=1
+       if [ ${DEBUG?} -eq ${TRUE?} ]; then
+          dmsg "${db2ts_stop_output?}"
+       fi
+    fi
+
+    trax db2ts_stop_verify
+    return ${db2ts_stop_rc?}
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+defaultopts
+
+# Process command-line options
+case $# in
+    0)
+        usage
+        ;;
+    *)
+        while getopts :t:k:s:l:dh optchar; do
+            case ${optchar?} in
+                t)  # check if text search is running
+                    INSTANCENAME="${OPTARG?}" 
+                    TEXTSEARCH=${TRUE?}
+                    ;;
+                k)  # check if Token exists
+                    INSTANCENAME="${OPTARG?}"
+                    TOKEN=${TRUE?}
+                    ;;
+                s)  # stop one instance of db2 text search
+                    INSTANCENAME="${OPTARG?}"
+                    STOP=${TRUE?}
+                    ;;
+                l)  # log file
+                    DB2INSTLOG="${OPTARG?}"
+                    ;;
+                d)  # Turn debug mode on
+  		    DEBUG=${TRUE?} 
+                    setopts="-x"
+                    ;;
+            h | ?)  # Display help
+                    usage
+                    ;;
+            esac
+        done
+        ;;
+esac
+
+set ${setopts?}
+
+# 933165mk If purescale instance return 0 else proceed 
+
+instHome=`${DB2DIR?}/bin/db2usrinf -d ${INSTANCENAME?}`
+ 
+is_purescale_rc=1
+SDInstance=`${instHome?}/sqllib/bin/db2fupdt -f ${instHome?}/sqllib/.instuse -p SDInstance`
+if [ "X${SDInstance?}" != "X" ]; then
+    is_purescale_rc=0
+fi
+
+if [ ${is_purescale_rc?} -eq 0 ]; then
+    exit 0;
+fi   
+
+# only 1 option can be set
+flag=""
+for name in ${TEXTSEARCH?} ${TOKEN?} ${STOP?}; do
+if [ ${name?} -eq ${TRUE?} ]; then
+   flag=${flag?}"T"
+fi
+done
+
+if [ "X${flag?}" = "XTT" -o "X${flag?}" = "XTTT" ]; then
+   usage
+# Retrieve text search port
+elif [ ${TEXTSEARCH?} -eq ${TRUE?} ]; then
+   chkTss ${INSTANCENAME?}
+   rc=$?
+# Check if Token exists
+elif [ ${TOKEN?} -eq ${TRUE?} ]; then
+   chkTok ${INSTANCENAME?}
+   rc=$?
+# Stop one instance of db2 text search server
+elif [ ${STOP?} -eq ${TRUE?} ]; then
+   db2ts_stop ${INSTANCENAME?}
+   rc=$?
+else
+   usage
+fi
+
+exit ${rc?}
+

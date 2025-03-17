@@ -1,0 +1,303 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2uit
+#
+# FUNCTION: db2uit - Update parameter=value style file
+#
+# USAGE: db2uit [-d] [-Q] [-D]
+#               [-q <field>]
+#               [-i <id>]
+#               [-r <runlevels>]
+#               [-a <action>]
+#               [-p <process>]
+#
+#          -d          turn debug mode on.
+#          FileName    file to modify
+#          -q          query a field given the search parameters
+#                      Without -q, this becomes an update (if -i ID is
+#                      already present) or insert.  Valid fields: i, r, a, p
+#          -i          ID of the entry
+#          -r          run levels
+#          -a          action to perform
+#          -p          process to launch
+#          -Q          Quiet: no output.
+#          -D          Delete record.
+#
+# RETURN CODES:
+#
+#          -q          If no field matches, non-zero, zero otherwise
+#        update/insert If file could not be updated, non-zero, zero otherwise
+#
+########################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+
+PROGNAME=`basename $0`       # Program name
+
+# Include common definition file
+if [ -f ${PROGDIR?}/db2iutil ]; then
+    . ${PROGDIR?}/db2iutil
+else
+    echo "File ${PROGDIR?}/db2iutil not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+get_locale         # Get the locale name of set message catalog path
+chk_root           # Check that only root is running this program
+
+exitcode=1
+
+TMPFILE="/tmp/db2uit.tmp.$$"    # Temporary file
+
+# To display the command syntax
+syntax ()
+{
+    display_msg ${DB2CAT?} 2 \
+        'DBI1002I Usage: %s [-d] [-Q] [-D]
+                            [-q <field>]
+                            [-i <id>]
+                            [-r <runlevels>]
+                            [-a <action>]
+                            [-p <process>]\n\n' \
+        ${PROGNAME?}
+    exit ${exitcode?}
+}
+
+defaultopts()
+{
+  IT_ID=""
+  IT_RUNLEVELS=""
+  IT_ACTION=""
+  IT_PROCESS=""
+  QUERY=""
+  DEBUG=1
+  QUIET=1
+  DELETE=1
+  setopts="+x"
+}
+
+add_query()
+{
+  N="$1"
+  Q="$2"
+  if [ "X${Q?}" != "X" ]
+  then
+    if [ "X${QWHERE?}" != "X" ]
+    then
+      QWHERE="${QWHERE?} && "
+    fi
+    QWHERE="${QWHERE?}\$${N?} == \"${Q?}\""
+  fi
+}
+
+run_query()
+{
+  case ${QUERY?} in
+    i) QFIELD=1 ;;
+    r) QFIELD=2 ;;
+    a) QFIELD=3 ;;
+    p) QFIELD=4 ;;
+    *) syntax   ;;
+  esac
+
+  awk "${QWHERE?}{print \$QFIELD}" QFIELD=${QFIELD?} FS=: /etc/inittab \
+    1> ${TMPFILE?} 2> /dev/null
+  
+  # If awk fails, print syntax error message and exit wihtout modifying inittab
+  exitcode=$?
+  if [ ${exitcode?} -ne 0 ]; then
+    syntax
+  fi
+
+  # if we merely are returning the value, display it.
+  if [ ${QUIET?} -ne 0 ]
+  then
+    cat ${TMPFILE?}
+  fi
+
+  # return value is true if we found a value, false otherwise.
+  LINES=`wc -l < ${TMPFILE?}`
+  exitcode=1
+  if [ ${LINES?} -ne 0 ]
+  then
+    exitcode=0
+  fi
+}
+
+run_update()
+{
+  BEGIN="BEGIN{found=0}"
+  END="END{if (found == 0) { print \"${IT_ID?}:${IT_RUNLEVELS?}:${IT_ACTION?}:${IT_PROCESS?}\" }}"
+
+  # Generate the conditions.
+  QWHERE=""
+  add_query 1 "${IT_ID?}"
+  AWKSCRIPT="{ if (${QWHERE?}) {
+\$2 = \"${IT_RUNLEVELS?}\";
+\$3 = \"${IT_ACTION?}\";
+\$4 = \"${IT_PROCESS?}\";
+found = 1;
+}
+print \$0;
+}"
+  rm -f ${TMPFILE?}
+  awk "${BEGIN?}
+${AWKSCRIPT?}
+${END?}" FS=: OFS=: /etc/inittab 1> ${TMPFILE?} 2> /dev/null
+
+  # If awk fails, print syntax error message and exit wihtout modifying inittab
+  exitcode=$?
+  if [ ${exitcode?} -ne 0 ]; then
+    syntax
+  fi
+  
+  mv /etc/inittab /etc/inittab.old
+  mv ${TMPFILE?} /etc/inittab
+}
+
+run_delete()
+{
+  rm -f ${TMPFILE?}
+  awk "!(${QWHERE?}){print \$0}" FS=: /etc/inittab 1> ${TMPFILE?} 2> /dev/null
+
+  # If awk fails, print syntax error message and exit wihtout modifying inittab
+  exitcode=$?
+  if [ ${exitcode?} -ne 0 ]; then
+    syntax
+  fi
+  
+  mv /etc/inittab /etc/inittab.old
+  mv ${TMPFILE?} /etc/inittab
+}
+
+#--------------------------------------------------------------------
+#                    Main Program
+#--------------------------------------------------------------------
+
+defaultopts
+
+# Process command-line options
+case $# in
+  0)
+    syntax 
+    ;;
+  *)
+    while getopts :dQDq:i:r:a:p: optchar
+    do
+      case ${optchar?} in
+        d)
+          DEBUG=0
+          setopts="-x"
+          ;;
+        D)
+          DELETE=0
+          ;;
+        q)
+          QUERY="${OPTARG?}"
+          ;;
+        i)
+          IT_ID="${OPTARG?}"
+          ;;
+        r)
+          IT_RUNLEVELS="${OPTARG?}"
+          ;;
+        a)
+          IT_ACTION="${OPTARG?}"
+          ;;
+        p)
+          IT_PROCESS="${OPTARG?}"
+          ;;
+        Q)
+          QUIET=0
+          ;;
+        *) # h or ?(error)
+          syntax
+          ;;
+      esac
+    done
+    ;;
+esac
+
+set ${setopts?}
+
+QWHERE=""
+add_query 1 "${IT_ID?}"
+add_query 2 "${IT_RUNLEVELS?}"
+add_query 3 "${IT_ACTION?}"
+add_query 4 "${IT_PROCESS?}"
+
+rm -f /etc/inittab.old
+
+if [ "X${QUERY?}" != "X" ]
+then
+  run_query
+elif [ ${DELETE?} -eq 0 ]
+then
+  run_delete
+else
+  run_update
+fi
+
+rm -f ${TMPFILE?}
+exit ${exitcode?}
+

@@ -1,0 +1,116 @@
+#!/bin/sh
+# sqlj - shell for invoking the new integrated command line version
+# of the SQLJ translator 
+# Usage:  sqlj  <-J-javavm-options> <-P-profiler-options> <-C-compiler-options>
+#               <-sqlj-options> <*.java, *.sqlj, and *.ser files>
+#
+# Note: The options are automatically prefixed with any options contained
+#       in the environment variable SQLJ_OPTIONS
+#
+# Note: if you need to pass quoted arguments unchanged, or you
+#       do not need to pass options to the Java interpreter,
+#       just uncomment the lines below.
+#
+#exec java sqlj.tools.Sqlj "$@" 
+
+files=
+switches=
+arg=
+s_option=
+javavm=java
+passes=
+
+###                                                        ###
+### Process options from SQLJ_OPTIONS environment variable ###
+###                                                        ###
+for s_option in $SQLJ_OPTIONS
+do
+  case "$s_option" in
+   -vm=*)          javavm=`echo $s_option | cut -c5-` ;;
+   -J-classpath=*) arg=`echo $s_option | cut -c14-` 
+                   switches="$switches -classpath $arg";;
+   -J-*)           arg=`echo $s_option | cut -c3-` 
+                   switches="$switches $arg";;
+   -passes)        passes="SQLJPass";;
+   *)              files="$files $s_option";;
+ esac
+done
+### End Process options from SQLJ_OPTIONS ###
+
+while [ $# -gt 0 ]
+do
+  case "$1" in
+   -vm=*)          javavm=`echo $1 | cut -c5-` ;;
+   -J-classpath)   switches="$switches -classpath $2"
+                   shift;;
+   -J-*)           arg=`echo $1 | cut -c3-` 
+                   switches="$switches $arg";;
+   -passes)        passes="SQLJPass";;
+###                                                                    ###
+### Option processing for better compatibility with javac and loadjava ###
+###                                                                    ###
+   ### Switches to the JavaVM ###
+   -classpath)     switches="$switches -classpath $2"
+                   shift;;
+
+   ### Abbreviations of switches to SQLJ ###
+   -C-classpath)   files="$files -C-classpath=$2"
+                   shift;;
+   -h)             files="$files -help";;
+   -v)             files="$files -status";;
+   -e)             files="$files -encoding=$2"
+                   shift;;
+   -e=*)           arg=`echo $1 | cut -c4-` 
+                   files="$files -encoding=$arg";;
+   -encoding)      files="$files -encoding=$2"
+                   shift;;
+   -d)             files="$files -d=$2"
+                   shift;;
+   -u)             files="$files -user=$2"
+                   shift;;
+   -u=*)           arg=`echo $1 | cut -c4-` 
+                   files="$files -user=$arg";;
+   -user)          files="$files -user=$2"
+                   shift;;
+### End of compatibility with javac and loadjava ###
+
+   *)              files="$files $1";;
+ esac
+ shift
+done
+
+###                                                                    ###
+### Due to a bug in "J2RE 1.3.1 IBM AIX build ca131-20020706", if any  ###
+### environment variable contains a newline in the value, the javac    ###
+### step of the SQLJ translator will fail because the CLASSPATH is not ###
+### picked up.  The most likely variable to have newlines is EXINIT so ###
+### it is unset here to bypass the problem.                            ###
+###                                                                    ###
+unset EXINIT
+
+###                                                     ###
+### Running SQLJ in a single pass or in two passes with ###
+###     explicit invocation of the Java compiler        ###
+###                                                     ###
+if [ "$passes" ]
+then
+  $javavm $switches sqlj.tools.Sqlj "-pass1=$passes" $files
+
+  if [ -f "${passes}.run" ]
+  then
+    javac=`cat ${passes}.run`
+    echo "[Info: COMPILER: ${javac}]"
+    if $javac >"${passes}.log"
+    then
+      $javavm $switches sqlj.tools.Sqlj "-pass2=$passes"
+    else
+      $javavm $switches sqlj.tools.Sqlj "-fail2=$passes"
+    fi
+    # rm -f "${passes}.run" "${passes}.ser" "${passes}.log"
+  else
+    # nothing left to do
+    :
+  fi
+else
+  $javavm $switches sqlj.tools.Sqlj $files
+fi

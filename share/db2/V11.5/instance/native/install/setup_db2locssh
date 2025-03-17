@@ -1,0 +1,453 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: setup_db2locssh
+#
+#
+# FUNCTION: setup_db2locssh - It is used to generate the required set of keys
+# and help in configuration of db2locssh. It is a more secured communication
+# channel which will be used for installation and configuration of purescale.
+#
+#
+# USAGE: setup_db2locssh [-h|-?] sshUserName
+#        sshUserName     Name of the non root user using which the remote
+#                        installation and configuration of pureScale happens.
+#
+########################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+TRUE=0
+FALSE=1
+export TRUE FALSE
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+BINDIR=${PROGDIR?}/../bin
+DISPMSGDIR=${BINDIR?}
+cd ${curdir?}
+
+# Location where the db2ssh files will be present
+DB2SSH_DIR="/var/db2/db2ssh"
+DB2CAT=${PROGDIR?}/../install/locale/en_US.iso88591/db2install.cat
+PROGNAME=`basename $0`       # Program name
+PROGARGS="$*"
+imageVRMF=`cat ${PROGDIR?}/../../spec | grep vrmf | cut -d= -f2` 2>/dev/null
+INVALID_USER=2
+INVALID_GROUP=3
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+sh_which_ ()
+{
+    set ${setopts?}
+
+    file=$1
+    search_path=$2
+    if [ -z "${search_path?}" ]
+    then
+      search_path="$PATH"
+    fi
+    echo ${search_path?} | sed -e 's/:/\
+/g' | while read path; do
+    if [ -x "${path?}/${file?}" ]
+    then
+        echo "${path?}/${file?}"
+        return 0
+    fi
+    done
+}
+
+sh_which ()
+{
+    set ${setopts?}
+    text=`sh_which_ "$@"`
+    # set return code based on whether there is any output.
+    if [ -z "${text?}" ]
+    then
+        return 1
+    else
+        echo "${text?}"
+        return 0
+    fi
+}
+
+TRUE=0
+FALSE=1
+
+if [ -z "${TRACTRAXLOG}" ]; then
+    _trace_tee ()
+    {
+      cat
+    }
+else
+    _trace_tee ()
+    {
+      tee -a ${TRACTRAXLOG}
+    }
+fi
+
+# To display a message when a function is called
+trac ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Entering: $*" >&2 | _trace_tee
+    fi
+}
+
+# To display a message when exiting a function
+trax()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Exiting: $*"  >&2 | _trace_tee
+    fi
+}
+
+# To display a message when "debug" is set
+dmsg ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## $*"  >&2 | _trace_tee
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - display_msg
+# Function   - Displays a message from the message catalog
+# Parameters - $1 - name of the message catalog
+#            - $2 - message number
+#            - $3 - default message string
+#            - $4,$5,$6 - arguments to substitute in msg string, if needed
+#-----------------------------------------------------------------------
+display_msg()
+{
+    set ${setopts?}
+
+    unset catname msgid deftmsg msgstr warnmsg infomsg
+    catname="$1"
+    msgid=$2
+    deftmsg="$3"
+    warnmsg=${FALSE?}
+    infomsg=${FALSE?}
+
+    echo ${deftmsg?} | grep "DBI....W" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        warnmsg=${TRUE?}
+    fi
+
+    echo ${deftmsg?} | grep "DBI....I" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        infomsg=${TRUE?}
+    fi
+
+    # Do not display message if NODISPLAY is set
+    if [ -z "${NODISPLAY}" ]; then
+        NODISPLAY=${FALSE?}
+    fi
+
+    if [ ${NODISPLAY?} -eq ${TRUE?} ]; then
+        return ${TRUE?}
+    fi
+
+    # Increment the message count only if it is not a warning or information
+    if [ ${warnmsg?} -eq ${FALSE?} -a ${infomsg?} -eq ${FALSE?} ]; then
+
+        # if MSGCOUNT isn't set, we'll just get 1, hence don't use the ? check. 
+        MSGCOUNT=`expr "${MSGCOUNT:-0}" + 1`
+    fi
+
+    shift ; shift ; shift
+
+    disp_msg_file=`sh_which disp_msg \
+         ${DISPMSGDIR:=${DB2DIR}}:${DISPMSGDIR?}/instance:${DISPMSGDIR?}/bin:${DISPMSGDIR?}/..`
+ 
+   sh_which_rc=$?
+ 
+    if [ -z "${DISPMSGLOG}" ]; then
+        dispmsg_tee_cmd="cat"
+    else
+        dispmsg_tee_cmd="tee -a ${DISPMSGLOG}"
+    fi
+
+    if [ ${sh_which_rc?} -eq 0 ]; then
+        ${disp_msg_file?} 1 ${msgid} ${catname} "${deftmsg}" "$@" 2>&1 | ${dispmsg_tee_cmd?}
+    else
+        echo "disp_msg does not exist"
+    fi
+
+}
+
+# To display the command syntax
+syntax ()
+{
+    # Use a non existing DBI Number to show the default message
+    # display_msg ${DB2CAT?} 6000 "Usage: setup_db2locssh [-h|-?] sshUserName"
+    echo "Usage: setup_db2locssh [-h|-?] sshUserName" 
+    exit 1
+}
+
+# Check if root is running the prog
+chk_root ()
+{
+    set ${setopts?}
+    if [ `${BINDIR?}/db2usrinf -E` -ne 0 ]; then
+        display_msg ${DB2CAT?} 52 \
+            'DBI1052E You must be root to execute this program.\n'
+        exit 67
+    fi
+}
+# Validates if userid and group of SSHuser are valid
+# It returns 2 if username is invalid and returns 3 if group is invalid
+validate_user_group ()
+{
+    set ${setopts?}
+    # check for length of the username , it should not be greater than 8 characters
+    sshidlen=`echo ${SSH_USER_ID?} | awk '{print length($1)}'`
+    if [ ${sshidlen?} -gt 8 ]; then
+       return ${INVALID_USER?}
+    fi
+
+    # check for the length of the group name , it should not be greater than 8 characters
+    sshgrplen=`echo ${SSH_USER_GRP?} | awk '{print length($1)}'`
+    if [ ${sshgrplen?} -gt 8 ]; then
+       return ${INVALID_GROUP?}
+    fi
+
+    # Check if user name starts with numeric value
+    sshidfstchr=`echo ${SSH_USER_ID?} | head -c 1`
+    expr ${sshidfstchr?} + 0 >/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+       return ${INVALID_USER?}
+    fi
+
+    # Check if user name starts with IBM , SYS or SQL 
+    RESERVE_SHORT_WORDS="IBM SQL SYS"
+    echo $RESERVE_SHORT_WORDS | grep -i `echo ${SSH_USER_ID?} | cut -b 1-3` >/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+       return ${INVALID_USER?}
+    fi
+
+    # Check if group name starts with IBM , SYS or SQL 
+    echo $RESERVE_SHORT_WORDS | grep -i `echo ${SSH_USER_GRP?} | cut -b 1-3` >/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+       return ${INVALID_GROUP?}
+    fi
+
+    # Check if user name is not in the list ADMINS USERS GUESTS PUBLIC LOCAL
+    RESERVE_WORDS="ADMINS USERS GUESTS PUBLIC LOCAL"
+    echo $RESERVE_WORDS | grep -i ${SSH_USER_ID?} 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+       return ${INVALID_USER?}
+    fi
+
+    # Check if group name is not in the list ADMINS USERS GUESTS PUBLIC LOCAL
+    echo $RESERVE_WORDS | grep -i ${SSH_USER_GRP?} 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+       return ${INVALID_GROUP?}
+    fi
+}
+    
+copy_db2ssh_files ()
+{
+   # check if the directory DB2SSH_DIR exists
+   if [ -d ${DB2SSH_DIR?} ]; then
+      if [ -f ${DB2SSH_DIR?}/db2locssh ]; then
+         if [ `${DB2SSH_DIR?}/db2locssh version` -lt `${PROGDIR?}/../install/db2locssh version` ]; then
+         # copy the file from media to DB2SSH_DIR
+         cp ${PROGDIR?}/../install/db2locssh ${DB2SSH_DIR?}  
+         fi
+      fi
+      if [ -f ${DB2SSH_DIR?}/db2remssh ]; then
+         if [ `${DB2SSH_DIR?}/db2remssh version` -lt `${PROGDIR?}/../install/db2remssh version` ]; then
+         # copy the file from media to DB2SSH_DIR
+         cp ${PROGDIR?}/../install/db2remssh ${DB2SSH_DIR?}
+         fi
+      fi
+      if [ -f ${DB2SSH_DIR?}/db2scp ]; then
+         if [ `${DB2SSH_DIR?}/db2scp version` -lt `${PROGDIR?}/../install/db2scp version` ]; then
+         # copy the file from media to DB2SSH_DIR
+         cp ${PROGDIR?}/../install/db2scp ${DB2SSH_DIR?}
+         fi
+      fi
+  else
+      # Make a dir DB2SSH_DIR and copy the files db2locssh,db2remssh and db2scp
+      mkdir -p -m 755 ${DB2SSH_DIR?}
+      cp ${PROGDIR?}/../install/db2locssh ${PROGDIR?}/../install/db2remssh ${PROGDIR?}/../install/db2scp ${DB2SSH_DIR?}
+  fi
+      # change the permission and ownership of the files
+      chmod 700 ${DB2SSH_DIR?}/db2locssh
+      chmod 4711 ${DB2SSH_DIR?}/db2remssh
+      chmod 700 ${DB2SSH_DIR?}/db2scp
+      # Add execute permission to others as db2locssh expects parent directory also to have required permission
+      chmod o+x /var/db2   
+}
+
+install_gskit ()
+{
+# Extract GSKIT crypto libraries into DB2SSH_DIR
+GSKIT_TAR_FILE="GSK_${imageVRMF?}_linuxamd64_x86_64.tar"
+GSKIT_TAR_GZ_FILE="${GSKIT_TAR_FILE?}.gz" 
+
+# copy the Gskit tar.gz file to DB2SSH_DIR
+cp ${PROGDIR?}/../FILES/${GSKIT_TAR_GZ_FILE?} ${DB2SSH_DIR?}
+cd ${DB2SSH_DIR?}
+gunzip ${DB2SSH_DIR?}/${GSKIT_TAR_GZ_FILE?}
+tar -xf ${DB2SSH_DIR?}/${GSKIT_TAR_FILE?}
+rm -rf ${GSKIT_TAR_FILE?}
+cd  ${PROGDIR?}
+}       
+   
+configure_db2ssh()
+{
+# Reset the GSKIT path
+${DB2SSH_DIR?}/db2locssh reset_config 1>/dev/null 2>/dev/null
+if [ $? -ne 0 ]; then
+echo "A fatal error occured during resetting of configuration for db2locssh"
+exit 1
+fi
+
+# Set the GSKIT path for db2locssh
+${DB2SSH_DIR?}/db2locssh set_gskit_path ${DB2SSH_DIR?}/lib64/gskit_db2/ 1>/dev/null 2>/dev/null
+if [ $? -ne 0 ]; then
+echo "A fatal error occured during setting of GSKIT path for db2locssh"
+exit 1
+fi
+
+# Set db2sshid passed as an input parameter
+${DB2SSH_DIR?}/db2locssh set_db2sshid $1 1>/dev/null 2>/dev/null
+if [ $? -ne 0 ]; then
+echo "A fatal error occured during setting the ssh userid"
+exit 1
+fi
+
+# Generate the keys
+${DB2SSH_DIR?}/db2locssh generate_keys 1>/dev/null 2>/dev/null
+if [ $? -ne 0 ]; then
+echo "A fatal error occured during generation of db2locssh keys"
+exit 1
+fi
+
+}
+
+generate_ssh_keys()
+{
+# Here we generate the open SSH keys for non root user
+su - $1 -c "ssh-keygen -b 2048 -t rsa -f ~/.ssh/id_rsa -N \"\"" 2>&1 1>/dev/null
+if [ $? -ne 0 ]; then
+echo "Generation of ssh keys for user $1 failed "
+exit 1
+fi
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+# Return an error if no. of arguments is not equal to 2 
+if [ $# -ne 1 ]; then
+echo "An invalid argument was entered.Enter the command again using valid parameters."
+syntax
+fi
+
+# Parse the arguments
+  case $# in
+    0)
+        syntax ;;
+    *)
+        while getopts :h optchar; do
+           case ${optchar?} in
+                ?) #Display help
+                    syntax;;
+           esac
+        done
+  esac
+
+# populate SSH_USER_ID with the first argument
+SSH_USER_ID=$1
+
+#Check if runner is root
+chk_root
+
+# Check if the user id provided is a valid user id
+if ${PROGDIR?}/../bin/db2usrinf -q ${SSH_USER_ID?}
+then
+   SSH_USER_HOME=`${PROGDIR?}/../bin/db2usrinf -d ${SSH_USER_ID?}`
+else
+   display_msg ${DB2CAT?} 131 \
+       'DBI1131E The user ID %s is invalid.' ${SSH_USER_ID?}
+   exit 1
+fi
+
+SSH_USER_GRP=`${PROGDIR?}/../bin/db2usrinf -g ${SSH_USER_ID?}`
+if [ -z "{SSH_USER_GRP?}" ]; then
+    display_msg ${DB2CAT?} 135 \
+        'DBI1135E The primary group %s of the user ID %s is invalid.' \
+        $SSH_USER_GRP $SSH_USER_ID
+    exit 1
+fi	
+
+# Validate SSH user name and group name
+validate_user_group
+
+exitcode=$?
+if [ ${exitcode?} -eq ${INVALID_USER?} ]; then
+   display_msg ${DB2CAT?} 101 \
+       'DBI1101E The user name %s is invalid.\n' ${SSH_USER_ID?}
+   exit 1
+elif [ ${exitcode?} -eq ${INVALID_GROUP?} ]; then
+     display_msg ${DB2CAT?} 135 \
+         'DBI1135E The primary group %s of the user ID %s is invalid.' \
+         $SSH_USER_GRP $SSH_USER_ID
+     exit 1
+fi
+
+# copy/update  the db2locssh files
+copy_db2ssh_files
+
+# if db2locssh is already configured, skip the rest of the steps
+if [ -f ${DB2SSH_DIR?}/db2ssh.cfg ]; then
+   db2sshid=`${DB2SSH_DIR?}/db2locssh display_config | grep db2sshid | cut -d= -f2` 2>/dev/null
+   echo " db2ssh is already configured on the host `hostname` with user $db2sshid "
+   exit 0
+else
+   # Installation of GSKIT
+   install_gskit
+
+   # Generate SSH keys for non-root user
+   if [ ! -f ${SSH_USER_HOME?}/.ssh/id_rsa ]; then
+      generate_ssh_keys ${SSH_USER_ID?}
+   fi
+
+   # Configuration of db2ssh
+   configure_db2ssh ${SSH_USER_ID?}
+fi
+
+if [ $? -eq 0 ]; then
+   #create a dummy file .remote_shell_cmd 
+   touch ${DB2SSH_DIR?}/.remote_shell_cmd
+   display_msg ${DB2CAT?} 70 'DBI1070I: Program %s completed successfully.\n' ${PROGNAME?}
+fi 
+
+# Successful exit
+

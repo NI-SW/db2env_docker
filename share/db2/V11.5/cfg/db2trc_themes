@@ -1,0 +1,141 @@
+################################################################################
+#
+#  Licensed Materials - Property of IBM
+#  (C) Copyright IBM Corp. 2001,2018. All Rights Reserved.
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by IBM Corporation
+#
+#  The source code for this program is not published or otherwise divested of
+#  its trade secrets, irrespective of what has been deposited with the U.S.
+#  Copyright Office.
+#
+#  File: db2trc_themes
+#
+#
+#  Change     Activity:
+#  defect     Date        Who Description
+#  ======     =========== === ==============================================
+#  wd38560    Jul/01/2005 avg Initial Drop.
+#
+##############################################################################
+
+##############################################################################
+# Trace themes feature allows to group many trace mask actions together into
+# various blocks that could be submitted to db2trc command and set all desried
+# mask flags.
+#
+# Trace themes are stored in the special file in instance directory or at
+# alternate location, specified by DB2TRC_THEMES_FILE environment variable.
+#
+# Trace themes file has following format:
+#
+#
+# [Trace_theme: <theme_name>]
+# <trace_action>  <trace_mask_element>
+#
+#
+# <theme_name> is a name for the theme, chosen by the user.
+# <trace_action> is an action to perform on the element, which follows it.
+# Can be one of following: add, del, set
+#
+# <trace_mask_element> - mask element specification. Please see trace
+# documentation on how to specify a proper mask element.
+#
+# # This is a comments line
+# ;  This is also a comments line
+#
+# [Trace_theme: Client_CTX]
+# # This theme will trace all client side context manipulations
+#
+# add  DB2.CLI.*.*
+# add  DB2.SQLE.sqleAttachToMasterCtxInternal.*
+# add  sqleAttachCtx
+# add  sqleDetachCtx
+# add  sqleFreeCtxInternal
+# add  sqleFreeCtx
+# del  DB2.CLI.SQLExecDirect.*
+#
+##############################################################################
+
+#-------------------------------------------------------------------------------
+# Trace all CDE components
+#-------------------------------------------------------------------------------
+[Trace_theme: COL]
+add  CDE
+add  CDE_DATA
+add  CDE_QUERYENGINE
+add  CDE_QUERYENGINE_COMPILER
+add  CDE_QUERYENGINE_JOINS
+add  CDE_TYPES
+add  CDE_CATALOG
+add  CDE_SERVICES
+add  CDE_QUERYENGINE_AGGREGATION
+add  CDE_QUERYENGINE_RUNTIME
+add  CDE_SORT
+add  SQLQG_CDE
+
+#-------------------------------------------------------------------------------
+# Trace CDE page compression.
+#-------------------------------------------------------------------------------
+[Trace_theme: cdePageCompressionDiagnostics]
+# NOTE: The name of the function that dumps the page compression diagnostics
+# is used in the following files and must be kept consistent across these
+# files:
+#
+# - $TOP/engn/cde/data/PageCompressionDiagnostics.*pp
+# - $TOP/test/fvt/standalone/blu/test/testPageCompressionDiagnostics.pl
+# - $TOP/common/db2trc/src/db2trc_themes (this file)
+#
+add PageCompressionDiagnostics::printDiagMsg
+
+#-------------------------------------------------------------------------------
+# Trace functions that maintain the CDE savepoint stacks.
+#-------------------------------------------------------------------------------
+[Trace_theme: cdeSavepointStacks]
+add sqlpSpReq
+add sqlpSpEnd
+add sqlpSpEndInt
+add sqlpSpRb
+add CDEApplication::startSavepointWithoutLatching
+add CDEApplication::endOneSavepointWithoutLatching
+add CDEApplication::endNestedSavepointsWithoutLatching
+add InsertRange::setupForApplicationUse
+add InsertRange::startSavepoint
+add InsertRange::endOneSavepoint
+add InsertRange::endNestedSavepoints
+
+#-------------------------------------------------------------------------------
+# Trace functions that save, restore, and use the synopsis tuple on the CDE
+# savepoint stacks.
+#-------------------------------------------------------------------------------
+[Trace_theme: cdeSynopsisTupleSaveAndRestore]
+add InsertRange::setupForApplicationUse
+add InsertRange::startSavepoint
+add InsertRange::endOneSavepoint
+add InsertRange::endNestedSavepoints
+add TableWriter::flushBufferedInserts
+add TableWriter::writeSynopsisTuple
+add TableWriter::replaceInMemorySynopsisWithCopyFromSavepoint
+
+#-------------------------------------------------------------------------------
+# Trace functions related to CDE vectorized inserts.
+#-------------------------------------------------------------------------------
+[Trace_theme: cdeVectorizedInsert]
+add InsertSubselectEvaluator::processInputsSynchronously
+add TableTupleSource::validateExternalColumnValues
+add TableAccessor::insertRowVectors
+add TableAccessor::insertRowInternal
+add TableWriter::applyPageDictionaries
+add TableWriter::insertTuplesBuffered
+add TableWriter::rebuildSynopsisTuples
+add TableIndexUpdater::addKeys
+add TupleIndex::addKeys
+add TupleIndex::getNextKey
+add TupleIndex::computeSortedOrder
+add TupleIndex::setUpIndexKey
+add ColumnGroupWriter::PageWriter::write
+add ColumnGroupWriteState::initPageBufferFromLastPage
+add ColumnGroupWriteState::insertTupleProcessPageFull
+add ColumnGroupWriteState::setUpNewPageForInserts
+add PageCompressionDiagnostics::printDiagMsg
+add EvolvedDictionaryBuilder::startAsyncDictionaryCreation

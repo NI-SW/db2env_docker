@@ -1,0 +1,26 @@
+FROM centos:7
+COPY ./db2inst1 /home/db2inst1
+COPY ./var/db2 /var/db2
+COPY ./share/db2 /opt/ibm/db2
+COPY ./root_bashrc /root/.bashrc
+
+RUN useradd db2inst1 && \
+chown db2inst1: /home/db2inst1/.bash* /home/db2inst1 /home/db2inst1/sqllib \
+/home/db2inst1/sqllib/user* \
+/home/db2inst1/sqllib/uif \
+/home/db2inst1/sqllib/tmp \
+/home/db2inst1/sqllib/security* \
+/home/db2inst1/sqllib/db2systm \
+/home/db2inst1/sqllib/db2dump \
+/home/db2inst1/sqllib/db2cshrc \
+/home/db2inst1/sqllib/ctrl* \
+/home/db2inst1/sqllib/cfg \
+/home/db2inst1/sqllib/cfgcache \
+/home/db2inst1/sqllib/adm \
+/home/db2inst1/sqllib/backup \
+/home/db2inst1/sqllib/sqlnodir/* \
+/home/db2inst1/sqllib/sqldbdir/* && \
+cd /home/db2inst1/sqllib/adm/ && \
+chmod 4555 db2audit db2cacpy db2credman db2iclean db2licm db2trc && \
+chgrp db2inst1 /home/db2inst1/sqllib/*
+

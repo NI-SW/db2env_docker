@@ -1,0 +1,12 @@
+BitWidth=64
+RealBitWidth=64
+DB2DIR=/opt/ibm/db2/V11.5
+InstanceType=4
+InstallerID=0
+INSTVER=115
+V=11
+R=5
+M=0
+F=0
+I=0
+S=0

@@ -1,0 +1,302 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2fs
+#
+# FUNCTION: Shell Script to run the DB2 First Steps.
+############################################################################
+
+#############################################################
+##       Start of Variable and Constant definitions        ##
+#############################################################
+PROGNAME=`basename $0`       # Program name
+
+#############################################################
+##               Start of function definitions             ##
+#############################################################
+
+#-----------------------------------------------------------------------
+# Name       - validateBrowserVersion
+# Function   - Check if the executable is a supported browser. If true,
+#               set the $browser variable.
+# Parameters - $1 - executable
+#            - $2 - browser name (Mozilla/Firefox)
+#            - $3 - major version of the given browser name to be supported
+#            - $4 - minor version of the given browser name to be supported
+#-----------------------------------------------------------------------
+validateBrowserVersion()
+{
+  program="$1"
+  browserName="$2"
+  browserMajorVersion=$3
+  browserMinorVersion=$4
+  major=""
+  minor=""
+
+  if [ -x ${program?} ]; then
+    # Check the version.
+    # "$program -version" should return "$brwoserName $browserMajorVersion.browserMinorVersion...."
+    if [ ${browserName?} = "Firefox" ]; then
+      version=`${program?} -version 2>&1 | awk '{print $2 " " $3}'`
+    else
+      version=`${program?} -version 2>&1 | awk '{print $1 " " $2}'`
+    fi
+
+    bname=`echo ${version?} | awk '{print $1}'`
+    if [ ${bname?} = ${browserName?} ]; then
+      v=`echo ${version?} | awk '{print $2}'`
+      v=`expr match ${v?} '\([0-9]*\.[0-9]*\)'`
+      major=`echo ${v?} | awk '{split($1,v1,"."); print v1[1]}'`
+      minor=`echo ${v?} | awk '{split($1,v1,"."); print v1[2]}'`
+
+    fi    
+    
+    if [ ! -z "${major?}" -a ! -z "${minor?}" ]; then
+      echo ${major?} | grep '[^0-9]' > /dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        echo ${minor?} | grep '[^0-9]' > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+          if [ ${major?} -gt ${browserMajorVersion?} ]; then
+            browser=${browserName?}
+          elif [ ${major?} -eq ${browserMajorVersion?} -a ${minor?} -ge ${browserMinorVersion?} ]; then
+            browser=${browserName?}
+          fi
+        fi
+      fi
+    fi
+  fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - modifyProfilePreference
+# Function   - Modify the user preference of the profile
+# Parameters - $1 - path to the user preference file
+#-----------------------------------------------------------------------
+modifyProfilePreference()
+{
+  userprefpath="$1"
+  sqllibPath="$2"
+
+cat << PREFS >> ${userprefpath?}/user.js
+user_pref("capability.principal.codebase.p0.granted", "UniversalXPConnect");
+pref("javascript.enabled", true);
+pref("dom.allow_scripts_to_close_windows", true);
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_welcome.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_database.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_prod_update.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_data_admin.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_DA_basic_admin.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_DA_db2_client_connections.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_DA_migrate_data.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_app_dev.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_create_stp_udf.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_develop.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_migrate.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_program.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_sample_code.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_AD_web_services.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_info_resource.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_IR_dev_communities.html");
+user_pref("capability.principal.codebase.p0.id", "file://${sqllibPath?}/doc/prodcd/${locale?}/first_steps/FS_IR_online_info.html");
+PREFS
+
+  touch ${userprefpath?}/prefs.js
+}
+
+# To display the command syntax
+syntax ()
+{
+  echo "Usage: ${PROGNAME?} [-h] [-b <browser>]"
+  exit 1
+}
+
+#############################################################
+##                Main program                             ##
+#############################################################
+curdir=`/bin/pwd`
+db2fsPath=`which db2fs`
+db2BinDir=`dirname ${db2fsPath?}`
+if [ ${db2BinDir?} = "." ]; then
+  db2BinDir=${curdir?}
+fi
+
+db2Path=`dirname ${db2BinDir?}`
+
+userSpecifiedBrowser=0
+
+# If user passed in the name of the browser following the -b flag, use that browser.
+while getopts :hb: optchar; do
+  case ${optchar?} in
+  b)  # Specify browser name
+    program="${OPTARG?}"
+    userSpecifiedBrowser=1
+    ;;
+  h)  # Display help
+    syntax
+    ;;
+  esac
+done
+
+browser=""
+
+# Find browsers
+# Try Mozilla 1.7 and up
+if [ -z "${browser?}" ]; then
+  if [ ${userSpecifiedBrowser?} -eq 0 ]; then
+    program=`which mozilla 2> /dev/null`
+  fi
+  validateBrowserVersion ${program?} "Mozilla" 1 7
+fi
+
+# Try Firefox 2.0 and up
+if [ -z "${browser?}" ]; then
+  if [ ${userSpecifiedBrowser?} -eq 0 ]; then
+    program=`which firefox 2> /dev/null`
+  fi
+  validateBrowserVersion ${program?} "Firefox" 2 0
+fi
+
+# Setup browser (Mozilla/Firefox) and browser profile
+createProfile=0
+# initialize the browser path in the dialog if we find a supported browser
+if [ -z "${browser?}" ]; then
+  msg=`db2javit -j:FirstSteps.FSBrowserSetupDialog -i: -c:.:../java/Common.jar:../tools/first_steps/db2fs.jar 2>&1`
+  rc=$?
+else
+  msg=`db2javit -j:FirstSteps.FSBrowserSetupDialog -i: -c:.:../java/Common.jar:../tools/first_steps/db2fs.jar -a:"${program?}" 2>&1`
+  rc=$?
+fi
+# check if we should create profile or not
+if [ ${rc?} -eq 0 ]; then
+  # user cancels out
+  exit 0
+elif [ ${rc?} -eq 5 ]; then
+  createProfile=1
+elif [ ${rc?} -eq 10 ]; then
+  createProfile=0
+elif [ ${rc?} -eq 20 ]; then
+  # display not set
+  echo ${msg?}
+  exit 20
+else
+  # error
+  echo ${msg?}
+  exit 30
+fi
+
+  msg2=`echo ${msg?} | awk '{split($0,msg2,"path="); print msg2[2]}'`
+
+program=`echo ${msg2?} | awk '{print $1}'`
+case "${program?}" in
+  *"mozilla") browser="Mozilla" ;;
+  *"firefox") browser="Firefox" ;;
+  *) browser="Other browsers" ;;
+esac
+
+# Find locale
+if [ "X$LANG" = "X" ];then
+  LANG=C
+fi
+
+locale=`db2langdir ${LANG?} -short`
+
+welcomePage="FS_welcome.html"
+if [ ! -f ${db2Path?}/doc/prodcd/${locale?}/first_steps/${welcomePage?} ]; then
+  locale=en_US
+fi
+
+user=`db2usrinf -n -E`
+
+# Check for CONPE and create a temporary file
+conpeInstalled="N"
+db2licmPath=${db2Path?}/adm/db2licm
+if [ -x ${db2licmPath?} ]; then
+  # 16 means CONPE
+  conpeInstalled=`${db2licmPath?} -i 16 2>&1 | awk '{print $1}'`
+fi
+
+# get IC urls by calling db2icdocs
+publibICUrl=""
+currentVersionICUrl=""
+unknownVersionICUrl=""
+db2icdocsPath=${db2Path?}/bin/db2icdocs
+if [ -x ${db2icdocsPath?} ]; then
+  publibICUrl=`${db2icdocsPath?} -host 2>&1 | awk '{split($0,v1,","); if (v1[1]) {print v1[1]} else {print ""}}'`
+  currentVersionICUrl=`${db2icdocsPath?} -host 2>&1 | awk '{split($0,v1,","); if (v1[2]) {print v1[2]} else {print ""}}'`
+  unknownVersionICUrl=`${db2icdocsPath?} -host 2>&1 | awk '{split($0,v1,","); if (v1[3]) {print v1[3]} else {print ""}}'`
+fi
+
+touch /tmp/db2fs_${user?}.js 2> /dev/null
+cat << TMPJS > /tmp/db2fs_${user?}.js
+conpe,${conpeInstalled?};\
+publibICUrl,${publibICUrl?};\
+currentVersionICUrl,${currentVersionICUrl?};\
+unknownVersionICUrl,${unknownVersionICUrl?};
+TMPJS
+
+# Create profile and launch First Steps welcome page
+
+if [ ${createProfile?} -eq 1 ]; then
+  
+  db2PathSymLink=""
+  docSymLink=`ls -l ${db2Path?}/doc 2>&1 | awk '{split($0,v1,"-> "); if (v1[2]) {print v1[2]} else {print ""}}'`
+  if [ -n "${docSymLink?}" ]; then
+    db2PathSymLink=`echo ${docSymLink?} | awk '{split($0,v1,"/doc"); print v1[1]}'`
+  fi
+
+  if [ ${browser?} = "Firefox" ]; then
+    #create profile in $HOME/.mozilla/firefox
+    ${program?} -nosplash -CreateProfile "DB2_FIRSTSTEPS ${HOME?}/.mozilla/firefox/DB2_FIRSTSTEPS" 2> /dev/null
+    
+    if [ -d ${HOME?}/.mozilla/firefox/DB2_FIRSTSTEPS ]; then
+      modifyProfilePreference "${HOME?}/.mozilla/firefox/DB2_FIRSTSTEPS" ${db2Path?}
+
+      if [ -n "${db2PathSymLink?}" ]; then
+        modifyProfilePreference "${HOME?}/.mozilla/firefox/DB2_FIRSTSTEPS" ${db2PathSymLink?}
+      fi
+    else
+      for browserProfileDir in ${HOME?}/.mozilla/firefox/*.DB2_FIRSTSTEPS;do
+        modifyProfilePreference ${browserProfileDir?} ${db2Path?}
+        if [ -n "${db2PathSymLink?}" ]; then
+          modifyProfilePreference ${browserProfileDir?} ${db2PathSymLink?}
+        fi
+      done
+    fi
+  else
+    #create profile in $HOME/.mozilla
+    ${program?} -nosplash -CreateProfile "DB2_FIRSTSTEPS ${HOME?}/.mozilla" 2> /dev/null
+    
+    for userprefpath in ${HOME?}/.mozilla/DB2_FIRSTSTEPS/*.slt;do
+      modifyProfilePreference ${userprefpath?} ${db2Path?}
+      if [ -n "${db2PathSymLink?}" ]; then
+        modifyProfilePreference ${userprefpath?} ${db2PathSymLink?}
+      fi
+    done
+  fi
+
+  # launch First Steps
+  ${program?} -P "DB2_FIRSTSTEPS" ${db2Path?}/doc/prodcd/${locale?}/first_steps/${welcomePage?}
+
+  # Delete profile
+  if [ ${browser?} != "Firefox" ]; then
+    rm -rf /tmp/DB2_FIRSTSTEPS_${user?} 2> /dev/null
+  fi
+else
+  ${program?} ${db2Path?}/doc/prodcd/${locale?}/first_steps/${welcomePage?}
+fi
+
+# Delete the temporary file
+rm /tmp/db2fs_${user?}.js 2> /dev/null
+

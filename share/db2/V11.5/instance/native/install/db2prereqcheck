@@ -1,0 +1,95 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM"
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2012 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# Filename      : db2prereqcheck
+# Type          : sh (Bourne shell)
+# Function      : Shell script wrapper for db2prereqcheck binary
+#
+########################################################################
+setopts=${setopts:-+x}
+set ${setopts?}
+
+# Variable for OS Checking
+OSMATCH=1
+
+# Retrieve the OS level using 'uname' command
+if [ -x /usr/bin/uname ]; then
+    CMD_UNAME=/usr/bin/uname
+elif [ -x /bin/uname ]; then
+    CMD_UNAME=/bin/uname
+fi
+
+# If current OS is AIX, check if its version is 6.1 or above.
+# If AIX OS < 6.1, abort with error message
+if [ `${CMD_UNAME?}` = "AIX" ]; then
+   if [ `${CMD_UNAME?} -a | cut -d " " -f 4` -lt 6 ] ; then
+      OSMATCH=0 ;
+   fi 
+fi 
+
+#SUN Solaris
+if [ `${CMD_UNAME?}` = "SunOS" ]; then
+   if [ `${CMD_UNAME?} -a | cut -d " " -f 3 | cut -d "." -f 1` -lt 5 ] ; then
+      OSMATCH=0 ;
+   fi
+   if [ `${CMD_UNAME?} -a | cut -d " " -f 3 | cut -d "." -f 2` -lt 9 ] ; then
+      OSMATCH=0 ;
+   fi
+fi
+
+#HPUX
+if [ `${CMD_UNAME?}` = "HP-UX" ]; then
+   if [ `${CMD_UNAME?} -a | cut -d " " -f 3 | cut -d "." -f 2` -lt 11 ] ; then
+      OSMATCH=0 ;
+   fi
+   if [ `${CMD_UNAME?} -a | cut -d " " -f 3 | cut -d "." -f 3` -lt 23 ] ; then
+      OSMATCH=0 ;
+   fi
+fi
+
+# Print error message if the current OS does not match with minimum requirement
+if [ ${OSMATCH} -eq 0 ]; then
+   echo "DBT3540E  The db2prereqcheck command failed because the db2prereqcheck command is not supported on the current operating system level.
+
+Explanation
+You can verify installation prerequisites for DB2 database using the db2prereqcheck utility.
+
+The db2prereqcheck utility requires the following minimum operating system levels:
+AIX 6.1
+HP-UX 11iv3
+Solaris 10
+
+User response
+Run the db2prereqcheck command on a system with a supported operating system level.
+"
+      exit 67
+fi
+
+
+#Get the invocation path from command line
+#Check for existence of db2prereqcheck_exe
+
+EXEPATH="$0_exe"
+
+if [ -f  $EXEPATH ]
+    then
+   #Invoking db2prereqcheck from path provided by user
+   exec $EXEPATH "$@"
+else
+   echo "ERROR: File not found: $EXEPATH"
+   exit 126
+fi
+
+

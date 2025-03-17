@@ -1,0 +1,28 @@
+#!/bin/ksh
+###############################################################################
+#
+#  Source File Name = db2sqljprint
+#
+#  5765172 (C) COPYRIGHT International Business Machines Corp. 1998
+#  All Rights Reserved
+#  Licensed Materials - Property of IBM
+#
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#  Function = Korn Shell Script to:
+#               DB2 SQLJ Profile Printer
+#
+#  Operating System: Bourne Shell Script
+#
+###############################################################################
+args=
+for arg
+do
+  # Eliminate obsolete parameters
+  if [[ ($arg != -url=*) && ($arg != -user=*) && ($arg != -password=*) ]]
+  then
+    args="$args $arg"
+  fi
+done
+java com.ibm.db2.jcc.sqlj.ProfilePrinter $args

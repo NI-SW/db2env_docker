@@ -1,0 +1,307 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2addicons
+#
+# FUNCTION: db2addicons - create desktop entries of certain DB2 tools for the current
+#                         user who has sourced DB2 instance enviornment for a
+#                         DB2 instance with db2profile
+#
+# USAGE: db2addicons
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+export curdir
+
+PROGNAME=`basename $0`       # Program name
+PROGARGS="$*"
+EXEC=1
+INSTUSE_VALUE=
+
+# Include common definition file
+if [ -f ${PROGDIR?}/../instance/db2iutil ]; then
+    . ${PROGDIR?}/../instance/db2iutil
+else
+    echo "File ${PROGDIR?}/../instance/db2iutil not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+get_locale         # Get the locale name of set message catalog path
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+
+# To display the help menu
+help()
+{
+    display_msg ${DB2CAT?} 449 \
+        'DBI1449I Usage: db2addicons [-h|-?] [-d]' \
+        ${PROGNAME?}
+    cleanup yes 
+    exit 1
+}
+
+sh_which_ ()
+{
+    set ${setopts?}
+
+    file=$1
+    search_path=$2
+    if [ -z "${search_path?}" ]
+    then
+      search_path="$PATH"
+    fi
+    echo ${search_path?} | sed -e 's/:/\
+/g' | while read path; do
+    if [ -x "${path?}/${file?}" ]
+    then
+        echo "${path?}/${file?}"
+        return 0
+    fi
+    done
+}
+
+sh_which ()
+{
+    set ${setopts?}
+    text=`sh_which_ "$@"`
+    # set return code based on whether there is any output.
+    if [ -z "${text?}" ]
+    then
+        return 1
+    else
+        echo "${text?}"
+        return 0
+    fi
+}
+
+check_icon_cmd ()
+{
+    set ${setopts?}
+    sh_which $1 > /dev/null
+    return $?
+}
+
+# Default values for command line options
+defaultopts()
+{
+    trac defaultopts $@
+    set ${setopts?}
+    DEBUG=1                 # Debug mode is FALSE
+    INSTNAME_ICON=`${DB2DIR?}/bin/db2usrinf -n -E`
+    INSTHOME_ICON=`${DB2DIR?}/bin/db2usrinf -d ${INSTNAME_ICON?}`
+    DB2SHORTCUT_CMD="${DB2DIR?}/bin/db2desktop"
+    INDEX_ICON_DIR=${INSTHOME_ICON?}/.ibm/db2/desktop
+    INSTANCE_DIR=${INSTHOME_ICON?}/sqllib
+    TMPDIR=${DB2TMPDIR:-/tmp}
+    ICON_LOG=${TMPDIR?}/db2addicons_${INSTNAME_ICON?}.$$
+    PROP_DIR=prop
+    JAVA_BIT=64
+    JAVA_EXE=${DB2DIR?}/java/jdk${JAVA_BIT?}/jre/bin/java
+    JAR_ICON=AZY_LinuxShortcutInstaller.jar
+    INDEX_ICON=${INDEX_ICON_DIR?}/${INSTNAME_ICON?}.dat
+    INDEX_INSTANCE_FILE=${INSTHOME_ICON?}/.ibm/db2/desktop/env
+
+    ICON_CMDS="db2 db2fs db2updserv clpplus"
+
+    if [ -e "${DB2DIR?}/bin/db2rmicons" ]; then
+       ${DB2DIR?}/bin/db2rmicons > /dev/null
+    fi
+
+    if [ ! -d "${INDEX_ICON_DIR?}" ]; then
+       mkdirectory "-p ${INDEX_ICON_DIR?}"
+       if [ $? -ne ${TRUE?} ]; then
+            exit 1
+       fi
+    fi
+
+    if [ -e ${INDEX_INSTANCE_FILE?} ]; then
+          rm -f ${INDEX_INSTANCE_FILE?}
+          if [ $? -ne 0 ]; then
+             display_msg ${DB2CAT?} 83 \
+                    'DBI1083E An attempt to remove %s failed.\n' \
+                    ${INDEX_INSTANCE_FILE?}
+             stop_prog 1
+          fi
+    fi
+
+    echo "DB2INSTANCE=${DB2INSTANCE?}" > ${INDEX_INSTANCE_FILE?}
+    if [ $? -ne 0 ]; then
+           display_msg ${DB2CAT?} 84 \ 
+            'DBI1084E An attempt to create file %s failed.\n' ${INDEX_INSTANCE_FILE?}
+           stop_prog 1
+    fi
+
+    if [ ! -e ${JAVA_EXE?} ]; then
+       if [ -n "$JAVA_HOME" -a -e "$JAVA_HOME/jre/bin/java" ]; then
+          JAVA_EXE=$JAVA_HOME/jre/bin/java
+       else
+          if check_icon_cmd java > /dev/null
+          then
+              JAVA_EXE="java"
+          else 
+              display_msg ${DB2CAT?} 447 'DBI1447E Java Runtime Environment is needed \
+                   to run the program %s.\n' "${PROGNAME?}"
+              exit 1
+          fi 
+       fi
+    fi
+
+    FOLDER_EXE="${JAVA_EXE?} -jar ${JAR_ICON?} -log ${ICON_LOG?} -index ${INDEX_ICON?} "
+
+    trax defaultopts
+}
+
+create_icons()
+{
+    trac create_icons $@
+    set ${setopts?}
+    create_icons_rc=${TRUE?}
+
+    cd ${DB2DIR?}/desktop
+    
+    if [ ! -e ${DB2DIR?}/desktop/${JAR_ICON?} ]; then
+       exit 1
+    fi
+
+    if [ -e "${ICON_LOG?}" ]; then
+          rm -f ${ICON_LOG?}
+    fi
+    ${FOLDER_EXE?} -users ${INSTNAME_ICON?} -properties prop/db2folder.properties
+    if [ $? -ne ${TRUE?} ]; then
+          create_icons_rc=${FALSE?}
+    fi
+
+    for cmd in ${ICON_CMDS}; do
+       if check_icon_cmd ${cmd?} > /dev/null
+       then
+          if [ -e prop/${cmd?}.properties -a -e icons/${cmd?}.xpm ]; then
+            ${FOLDER_EXE?}  -users ${INSTNAME_ICON?} -properties \
+                    "prop/${cmd?}.properties" -exec  "${DB2SHORTCUT_CMD?} ${cmd?}"
+            if [ $? -ne ${TRUE?} ]; then
+               create_icons_rc=${FALSE?} 
+            fi 
+          fi
+       fi
+    done
+
+    return ${create_icons_rc?}
+    trax create_icons
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+defaultopts        # Define default values for command-line options
+
+# Process command-line options
+while getopts :hdw optchar; do
+    case ${optchar?} in
+         d)  # Turn debug mode on
+            DEBUG=0
+            setopts="-x" ;;
+         w)  # internal flag to execute the program
+            EXEC=0
+            shift ;;
+         ?) # Display help
+            cleanup
+            help ;;
+   esac
+done
+
+set ${setopts?}
+
+trap "stop_prog 2" 1 2 3 15
+cleanup                      # Clean up
+
+CUR_INSTNAME=${DB2INSTANCE:=""}
+if [ -z "${CUR_INSTNAME?}" ]; then
+    display_msg ${DB2CAT?} 451 'DBI1451E DB2 instance environment is not \
+            set to run the program %s.\n' "${PROGNAME?}"
+    exit 1
+else
+    if [ ${EXEC?} -ne 0 ]; then
+       query_instuse_string ${CUR_INSTNAME?} DB2DIR ${DB2DIR?}
+       if [ "X${INSTUSE_VALUE?}" != "X${DB2DIR?}" ]; then
+          exec ${INSTUSE_VALUE?}/bin/${PROGNAME?} -w "$@"
+       fi
+    fi
+fi
+
+create_icons
+
+if [ $? -ne ${TRUE?} ]; then
+   display_msg ${DB2CAT?} 448 'DBI1448E There exist errors during the \
+           creation or removal of DB2 desktop entries. Check the log file %s \
+           for details.\n' "${ICON_LOG?}"
+   exit 1
+else
+   rm -f ${ICON_LOG?}
+   exit 0
+fi

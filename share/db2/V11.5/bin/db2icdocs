@@ -1,0 +1,35 @@
+#! /bin/sh
+# -----------------------------------------------------------------------
+# (C) COPYRIGHT International Business Machines Corp. 1999, 2004
+# All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+# NAME: db2icdocs
+#
+# FUNCTION: Shell Script to launch the DB2 Information Center.
+#
+# -----------------------------------------------------------------------
+
+# Gather the appropriate parameters and pass them along to db2help.
+while [ "$1" != "" ]; do
+    case $1 in
+        -host )                 host=1
+                                ;;
+        -h  )                   db2help -h
+                                exit
+                                ;;
+        * )                     usage
+                                exit 1
+    esac
+    shift
+done
+
+
+if [ "$host" = "1" ]; then
+    db2help -o
+else
+    db2help
+fi
+

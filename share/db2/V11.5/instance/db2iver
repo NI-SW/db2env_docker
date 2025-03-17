@@ -1,0 +1,25 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+DB2VER_CURRENT=115
+CurVERSION=11
+CurRELEASE=5
+CurMODIFICATION=0
+CurFIXLEVEL=0
+CurINTERIM=0
+CurSpecialBuild=
+CurINSTALLP=0
+CurVRMFIS="${CurVERSION?}_${CurRELEASE?}_${CurMODIFICATION?}_${CurFIXLEVEL?}_${CurINTERIM?}_${CurINSTALLP?}"
+Cur_VRMFIS="${CurVERSION?}.${CurRELEASE?}.${CurMODIFICATION?}.${CurFIXLEVEL?}.${CurINTERIM?}.${CurINSTALLP?}"
+Cur_VRMF="${CurVERSION?}.${CurRELEASE?}.${CurMODIFICATION?}.${CurFIXLEVEL?}"

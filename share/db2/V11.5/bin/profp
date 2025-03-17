@@ -1,0 +1,18 @@
+#!/bin/ksh
+###############################################################################
+#
+#  Source File Name = PROFP %I%
+#  %W%
+#
+#  5765172 (C) COPYRIGHT International Business Machines Corp. 1998
+#  All Rights Reserved
+#  Licensed Materials - Property of IBM
+#
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#  Function = Korn Shell Script to:
+#               SQLJ Profile Printer
+#
+###############################################################################
+java sqlj.runtime.profile.util.ProfilePrinter "$@"

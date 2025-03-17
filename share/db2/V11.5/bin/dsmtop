@@ -1,0 +1,160 @@
+#!/bin/sh
+# dsmtop (aka db2view - a db2top replacement) startup script
+#
+# This version of the startup script is written to be installed
+# as part of DB2.  It should be copied to sqllib/bin/dsmtop. 
+#
+# Copyright (c) 2014 - 2016, IBM Corporation.  All rights reserved.
+
+
+# Find 'which'
+if [ -x /bin/which ]
+then
+	WHICH=/bin/which
+elif [ -x /usr/bin/which ]
+then
+	WHICH=/usr/bin/which
+elif [ -x /usr/local/bin/which ]
+then
+	WHICH=/usr/local/bin/which
+else 
+	WHICH=which 
+fi	
+export WHICH
+
+# Find installation directory
+DSMTOP_PATH=`$WHICH $0`
+echo $DSMTOP_PATH | grep -e '^\.' > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+	DSMTOP_PATH=`pwd`/`basename $DSMTOP_PATH`
+fi
+INSTALL_DIR_BIN=`dirname $DSMTOP_PATH`
+INSTALL_DIR=`echo $INSTALL_DIR_BIN | sed 's/\/bin$//'`
+
+# Check for Java 1.7 in our PATH
+if [ -n "$JAVA_HOME" ]
+then
+    PATH=$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+    export PATH
+fi
+
+# If user has not included java in their path then use the Java shipped with DB2
+$WHICH java > /dev/null 2>&1
+if [ $? -ne 0 ]
+then
+    PATH=${INSTALL_DIR}/java/jdk64/bin:${INSTALL_DIR}/java/jdk64/jre/bin:${PATH}
+    export PATH
+fi
+
+$WHICH java > /dev/null 2>&1
+if [ $? -ne 0 ]
+then
+    echo "dsmtop requires Java 1.7 or higher in the PATH to run."
+    echo "Please ensure Java is in your PATH".
+    exit -1
+fi
+
+JAVA_VERSION=`java -version 2>&1 |awk 'NR==1 { print $3}'`
+echo $JAVA_VERSION|grep  '1\.[7-9]' > /dev/null 2>&1
+if [ $? -ne 0 ]
+then
+    echo "dsmtop requires Java version 1.7 or higher to run."
+    echo "JAVA Version: $JAVA_VERSION"
+    echo "Please ensure Java  version is >= 1.7 ".
+    exit -1
+fi
+
+JAVA=`$WHICH java`
+export JAVA
+
+echo "install dir: $INSTALL_DIR"
+echo "java executable path: $JAVA"
+echo "Java version used: $JAVA_VERSION"
+
+# Check for dsmtop.jar
+if [ -f $INSTALL_DIR/tools/dsmtop.jar -o -h $INSTALL_DIR/tools/dsmtop.jar ]
+ then
+    DSMTOP_JAR=$INSTALL_DIR/tools/dsmtop.jar
+ else 
+   find $INSTALL_DIR -name dsmtop.jar > /tmp/dsmtop.f1.$$ 2> /dev/null
+   grep -q 'dsmtop.jar' /tmp/dsmtop.f1.$$ > /dev/null 2>&1
+      if [ $? -eq 0 ]
+      then
+          DSMTOP_JAR=`head -n 1 /tmp/dsmtop.f1.$$`
+          rm -f /tmp/dsmtop.f1.$$
+      else 
+          rm -f /tmp/dsmtop.f1.$$
+          echo "Could not find dsmtop.jar."
+          echo "Please ensure that your installation completed successfully."
+          echo "If the problem persists, please locate and add dsmtop.jar to $INSTALL_DIR/tools."
+          exit -1;
+      fi
+fi
+
+# Check for lanterna.jar
+if [ -f $INSTALL_DIR/tools/lanterna.jar -o -h $INSTALL_DIR/tools/lanterna.jar ]
+ then
+    LANTERNA_JAR=$INSTALL_DIR/tools/lanterna.jar
+ else 
+     find $INSTALL_DIR -name lanterna.jar > /tmp/lanterna.f1.$$ 2> /dev/null
+     grep -q 'lanterna.jar' /tmp/lanterna.f1.$$ > /dev/null 2>&1
+     if [ $? -eq 0 ]
+     then
+        LANTERNA_JAR=`head -n 1 /tmp/lanterna.f1.$$`
+        rm -f /tmp/lanterna.f1.$$
+     else 
+        rm -f /tmp/lanterna.f1.$$
+        echo "Could not find lanterna.jar."
+        echo "Please ensure that your installation completed successfully."
+        echo "If the problem persists, please locate and add lanterna.jar to $INSTALL_DIR/tools."
+        exit -1;
+     fi
+fi
+
+# Check for db2jcc4.jar
+if [ -f $INSTALL_DIR/java/db2jcc4.jar -o -h $INSTALL_DIR/java/db2jcc4.jar ]
+  then
+    DB2JCC_JAR=$INSTALL_DIR/java/db2jcc4.jar
+  else 
+    find $INSTALL_DIR -name db2jcc4.jar > /tmp/db2jcc4.f1.$$ 2> /dev/null
+    grep -q 'db2jcc4.jar' /tmp/db2jcc4.f1.$$ > /dev/null 2>&1
+    if [ $? -eq 0 ]
+    then
+       DB2JCC_JAR=`head -n 1 /tmp/db2jcc4.f1.$$` 
+       rm -f /tmp/db2jcc4.f1.$$
+    else 
+       rm -f /tmp/db2jcc4.f1.$$
+       echo "Could not find db2jcc4.jar."
+       echo "Dsmtop requires the driver for JDBC."
+       echo "Please ensure that you select 'Java support' during the DB2 installation process."
+       echo "If the problem persists, please locate and add db2jcc4.jar to $INSTALL_DIR/java."
+       exit -1;
+	fi
+fi
+
+# Check for JCC license jar
+if [ -f $INSTALL_DIR/java/db2jcc_license_cu.jar -o -h $INSTALL_DIR/java/db2jcc_license_cu.jar ]
+ then
+    DB2JCC_LIC=$INSTALL_DIR/java/db2jcc_license_cu.jar
+    else 
+       find $INSTALL_DIR -name db2jcc_license_cu.jar > /tmp/db2jcc.f2.$$ 2> /dev/null
+	   grep -q 'db2jcc_license_cu.jar' /tmp/db2jcc.f2.$$ > /dev/null 2>&1
+       if [ $? -eq 0 ]
+          then
+            DB2JCC_LIC=`head -n 1 /tmp/db2jcc.f2.$$` 
+            rm -f /tmp/db2jcc.f2.$$
+       else 
+          rm -f /tmp/db2jcc.f2.$$
+          echo "Could not find db2jcc_license_cu.jar."
+          echo "Please ensure that your installation completed successfully."
+          echo "If the problem persists, please locate and add db2jcc_license_cu.jar to $INSTALL_DIR/java."
+          exit -1;
+       fi
+fi
+
+# Invoke DSMTOP
+$JAVA -jar $DSMTOP_JAR  $* 
+
+exit $? 
+# end-of-file

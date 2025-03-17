@@ -1,0 +1,184 @@
+#!/usr/bin/perl
+################################################################################
+#
+#
+#  Source File Name = whichdist
+#
+#  Descriptive Name = 
+#
+#  Licensed Materials - Property of IBM
+#  (C) Copyright IBM Corp 2009, 2018. All Rights Reserved.
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by IBM Corporation
+#
+################################################################################
+$| = 1;
+
+chop ($uname = `uname -s`);
+
+if ($uname ne "Linux")
+{
+   printf("This tool is only for use on Linux platforms.\n");
+   exit 0;
+}
+else
+{
+   chop ($architecture = `uname -m`);
+   if (($architecture =~ /i[0-9]86/) ||
+       ($architecture =~ /ppc64/) || 
+       ($architecture =~ /ia64/) || 
+       ($architecture =~ /x86_64/) ||
+       ($architecture eq "s390x"))
+   {
+      $major_ver = (split(/\./, `uname -r`))[0];
+      $minor_ver = (split(/\./, `uname -r`))[1];
+
+      print_distribution();
+      print_kernel_information();
+
+      if ($major_ver < 2 || ($major_ver == 2 && $minor_ver < 6))
+      {
+        printf( "This version of DB2 requires Linux kernel version 2.6 or higher.\n" );
+      }
+
+      print_glibc_level();
+      print_libstdcplusplus_version();
+   }
+   else 
+   {
+      printf("DB2 does not support Linux on $architecture.\n");
+      printf("We currently support 32-bit DB2 on Linux for x86 and 64-bit DB2 on Linux for x86_64, i/p Series 64-bit, IA64, and zSeries 64-bit.\n");
+   }
+   exit 0;
+}
+
+sub print_distribution
+{
+# FIND The current distribution.  
+# This is usually found through the distro-release or distro_version file
+
+  printf ("\n-----------------------------------------------Distribution Information\n");
+  local($found);
+  $found = 0;
+
+  chop ($find_release = `ls /etc/*release* | grep release`);
+
+  foreach $release (split ("\n", $find_release))
+  {
+    if (-e $release)
+    {
+      printf ("$release:\n");
+      system ("cat $release");
+      $found = 1;
+    }
+  }
+
+  if (!$found)
+  {
+    chop ($find_release = `ls /etc/*version* | grep version`);
+
+    foreach $release (split ("\n", $find_release))
+    {
+      if (-e $release)
+      {
+        printf ("$release: \n");
+        system ("cat $release");
+        $found = 1;
+      }
+    }
+  }
+
+  # Also print this out for completeness (SLES or AS should show up here)
+  if (-e "/etc/issue")
+  {
+        printf ("\n/etc/issue:\n");
+        system ("cat /etc/issue");
+  }
+}
+
+sub print_kernel_information
+{
+  printf ("-----------------------------------------------------Kernel Information\n");
+  local ($uname);
+  chop ($uname = `uname -n`);
+  printf ("Node name: \t\t$uname\n");
+  chop ($uname = `uname -r`);
+  printf ("Kernel Level: \t\t$uname\n");
+  chop ($uname = `uname -v`);
+  printf ("Kernel Build Date: \t$uname\n");
+  chop ($uname = `uname -m`);
+  printf ("Machine Type: \t\t$uname\n");
+}
+
+sub print_glibc_level
+{
+  printf ("\n----------------------------------------------------libc.so Information\n");
+  local ($find_libc);
+  local ($found);
+
+  $found = 0;
+  chop ($find_libc = `ls /lib/libc.so* | grep libc`);
+
+  foreach $libc (split(" ", $find_libc))
+  {
+    if (-e $libc)
+    {
+      chop ($executelibc = `strings $libc |grep "release version"`);
+      $executelibc =~ s/.*release version //g;
+      $executelibc =~ s/, by Roland.*//g;
+      printf ("GLIBC version: \t$executelibc\n");
+      $found = 1;
+    }
+  }
+
+  if (!$found)
+  {
+    printf("GLIBC *NOT* FOUND\n");
+  }
+}
+
+sub print_libstdcplusplus_version
+{
+  printf ("\n--------------------------------------------------libstdc++ Information\n");
+
+  #Check for 32-bit libstdc++.so.5 ( needed for DB2 v9.x clients )
+  chop($libstd = `ls -al /usr/lib/libstdc++* |egrep "/usr/lib/libstdc\\+\\+.so.5 ->"`);
+
+  if ($libstd)
+  {
+    $libstd =~ s/.*-> //g;
+    printf ("DB2 v9.x ($architecture): 32-bit libstdc++.so.5 exists as /usr/lib/$libstd\n");
+  }
+  else
+  {
+    if ($architecture =~ /i[0-9]86/)
+    {
+      printf ("DB2 v9.x ($architecture): 32-bit libstdc++.so.5 is required but does not exist on this system.\n");
+    }
+    else
+    {
+      printf ("DB2 v9.x ($architecture): 32-bit libstdc++.so.5 does not exist on this system.\n");
+      printf("It is needed for 32-bit runtime client and stored procedure support.\n");
+    }
+
+    printf ("You should install the standard C++ library for gcc 3.3.\n");
+  }
+
+  if ($architecture !~ /i[0-9]86/)
+  {
+    #Check for 64-bit libstdc++.so.5 ( needed for DB2 v9.x servers )
+    chop($libstd = `ls -al /usr/lib64/libstdc++* |egrep "/usr/lib64/libstdc\\+\\+.so.5 ->"`);
+
+    if ($libstd)
+    {
+      $libstd =~ s/.*-> //g;
+      printf ("DB2 v9.x ($architecture): 64-bit libstdc++.so.5 exists as /usr/lib64/$libstd\n");
+    }
+    else
+    {
+      printf ("DB2 v9.x ($architecture): 64-bit libstdc++.so.5 does not exist on this system.\nYou should install the standard C++ library for gcc 3.3.\n");
+    }
+  }
+
+  printf ("\n");
+}

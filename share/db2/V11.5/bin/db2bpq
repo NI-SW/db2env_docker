@@ -1,0 +1,37 @@
+#!/bin/sh
+###############################################################################
+#
+#  Source File Name = DB2BPQ  %I%
+#  %W%
+#
+#  5765172 (C) COPYRIGHT International Business Machines Corp. 1993
+#  All Rights Reserved
+#  Licensed Materials - Property of IBM
+#
+#  US Government Users Restricted Rights - Use, duplication or
+#  disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#  Function = Bourne Shell Script to:
+#               Determine if CLP backend process exists
+#
+#  Operating System: Bourne Shell Script
+#
+#  Defect Activity:
+#  defect#   DATE    WHO DESCRIPTION
+#  ===========================================================================
+#
+#  APAR Activity:
+#   APAR#   DATE     WHO DESCRIPTION
+#  ===========================================================================
+#  LI70236  03/09/23 drb drb chg "ps aw" to "ps -elf"                d292485drb
+#
+###############################################################################
+
+bp=`/bin/ps -elf | grep "db2bp $1" | grep -v grep`
+
+if [ "${bp}" = "" ]
+then
+   echo "0"
+else
+   echo "1"
+fi

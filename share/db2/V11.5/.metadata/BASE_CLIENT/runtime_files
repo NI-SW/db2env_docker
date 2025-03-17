@@ -1,0 +1,11 @@
+license/db2licnu
+license/nodelock.db2
+license/db2trlic
+license/nodelock
+cfg/.db2PerInstallationSeed
+cfg/installcopy.cfg
+license/nodelock.bak
+license/db2licst
+cfg/.savedImageChksum
+cfg/db2sprf
+sqlha.sys

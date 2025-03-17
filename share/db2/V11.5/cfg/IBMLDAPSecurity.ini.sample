@@ -1,0 +1,191 @@
+;----------------------------------------------------------------------
+; Licensed Materials - Property of IBM
+;
+; Governed under the terms of the International
+; License Agreement for Non-Warranted Sample Code.
+;
+; (C) COPYRIGHT International Business Machines Corp. 2006
+; All Rights Reserved.
+;
+; US Government Users Restricted Rights - Use, duplication or
+; disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+;----------------------------------------------------------------------
+;
+; Sample configuration file for the IBM DB2 LDAP Security Plugin
+;
+; The default name and location for this file is
+;   UNIX:    INSTHOME/sqllib/cfg/IBMLDAPSecurity.ini
+;   Windows: %DB2PATH%\cfg\IBMLDAPSecurity.ini
+; Optionally, the location of this file can be specified via the
+; DB2LDAPSecurityConfig environment variable.
+; On Windows systems, this variable should be set in the global
+; system environment to ensure it is picked up by the DB2 service.
+;
+; A semicolon anywhere on a line begins a comment.
+;
+; The default values work well for many IBM Tivoli Directory Server
+; configurations.  Other directory servers may require different
+; values; please consult your LDAP server administrator.
+;
+; Values known to work with many Microsoft Active Directory
+; installations are mentioned below; search for "MSAD".
+;
+; This sample configuration was last updated in August 2007
+;----------------------------------------------------------------------
+
+
+;----------------------------------------------------------------------
+; SERVER RELATED VALUES
+;----------------------------------------------------------------------
+
+; LDAP_HOST
+; Name of your LDAP server(s).
+; This is a space separated list of LDAP server hostnames or IP
+; addresses, with an option port number for each one:
+;    host1[:port] [host2:[port2] ... ]
+; The default port number is 389, or 636 if SSL is enabled.
+LDAP_HOST = my.ldap.server
+
+; ENABLE_SSL
+; To enable SSL support, you must have the GSKit toolkit installed.
+; Optional; defaults to false (no SSL).
+;ENABLE_SSL = true
+
+; SSL_KEYFILE and SSL_PW
+; SSL keyring and keyring password
+; A keyfile is only required if your LDAP server is using a
+; certificate that isn't automatically trusted by your GSkit install.
+;SSL_KEYFILE = /home/db2inst1/IBMLDAPSecurity.kdb
+;SSL_PW = keyfile-password
+
+; FIPS_MODE
+; To set SSL encryption FIPS mode on or off.  
+; Optional; Valid values are true (on) and false (off).  Defaults to
+; true (FIPS mode on).  
+FIPS_MODE = true
+
+; SECURITY_PROTOCOL
+; Determines the procotol used for SSL connection
+; Possible values are:
+;  TLSV12 - Only TLS 1.2 can be used
+;  ALL    - TLS 1.0, 1.1 and 1.2 can be used
+;SECURITY_PPOTOCOL = ALL
+
+;----------------------------------------------------------------------
+; USER RELATED VALUES
+;----------------------------------------------------------------------
+
+; USER_OBJECTCLASS
+; LDAP object class used for users
+; Generally "inetOrgPerson" ("user" for MSAD)
+USER_OBJECTCLASS = inetOrgPerson
+
+; USER_BASEDN
+; LDAP base DN to use when searching for users.
+; This is optional.  If not specified, user searches will
+; start at the root of the LDAP directory. Some LDAP servers (particularly
+; MSAD) may require that you specify a value for this parameter.
+;USER_BASEDN = o=ibm
+
+; USERID_ATTRIBUTE
+; LDAP user attribute that represents the "userid"
+; This attribute is combined with the USER_OBJECTCLASS and USER_BASEDN
+; (if specified) to construct an LDAP search filter when a user issues
+; a DB2 CONNECT statement with an unqualified userid.
+; For example, using the default values in this configuration file,
+;    db2 connect to MYDB user bob using bobpass
+; results in the following search filter:
+;    &(objectClass=inetOrgPerson)(uid=bob)
+; For MSAD, this is frequently "sAMAccountName".
+USERID_ATTRIBUTE = uid
+
+; AUTHID_ATTRIBUTE
+; LDAP user attribute that represents the DB2 "authorization ID"
+; (typically this is the same as the USERID_ATTRIBUTE).
+; Again, for MSAD this is frequently "sAMAccountName".
+AUTHID_ATTRIBUTE = uid
+
+
+;----------------------------------------------------------------------
+; GROUP RELATED VALUES
+;----------------------------------------------------------------------
+
+; GROUP_OBJECTCLASS
+; LDAP object class used for groups
+; Generally "groupOfNames" or "groupOfUniqueNames" ("group" for MSAD)
+GROUP_OBJECTCLASS = groupOfNames
+
+; GROUP_BASEDN
+; LDAP base DN to use when searching for groups
+; This is optional.  If not specified, group searches will
+; start at the root of the LDAP directory. Some LDAP servers (MSAD)
+; require that you specify a value for this parameter.
+;GROUP_BASEDN = o=ibm
+
+; GROUPNAME_ATTRIBUTE
+; LDAP group attribute that represents the name of the group
+GROUPNAME_ATTRIBUTE = cn
+
+; GROUP_LOOKUP_METHOD
+; Determines the method used to find the group memberships for a user.
+; Possible values are:
+;  SEARCH_BY_DN   - Search for groups that list the user as a member.
+;                   Membership is indicated by the group attribute defined
+;                   as GROUP_LOOKUP_ATTRIBUTE (typically "member" or
+;                   "uniqueMember").
+;  USER_ATTRIBUTE - A user's groups are listed as attributes of the user
+;                   object itself.  Search for the user attribute defined
+;                   as GROUP_LOOKUP_ATTRIBUTE to get the groups (typically
+;                   "memberOf" for MSAD or "ibm-allGroups" for ITDS).
+; Many MSAD installation use "GROUP_LOOKUP_METHOD = USER_ATTRIBUTE" and
+; "GROUP_LOOKUP_ATTRIBUTE = memberOf".
+GROUP_LOOKUP_METHOD = SEARCH_BY_DN
+;GROUP_LOOKUP_METHOD = USER_ATTRIBUTE
+
+; GROUP_LOOKUP_ATTRIBUTE
+; Name of the attribute used to determine group membership, as described
+; above.
+GROUP_LOOKUP_ATTRIBUTE  = member
+;GROUP_LOOKUP_ATTRIBUTE  = ibm-allGroups
+
+; NESTED_GROUPS
+; If NESTED_GROUPS is true, we recursively search for group memberships by
+; attempting to look up the group memberships for every group that we find.
+; Cycles (A belongs to B, B belongs to A) are handled correctly.
+; This is optional, and default to false.
+;NESTED_GROUPS = true
+
+
+;----------------------------------------------------------------------
+; MISCELLANEOUS VALUES
+;----------------------------------------------------------------------
+
+; SEARCH_DN and SEARCH_PW
+; If your LDAP server does not support anonymous access, or if anonymous
+; access is not sufficient when searching for users or groups, then you
+; can define a DN and password that will be used to perform searches.
+; Optional.
+;
+; MSAD does not, by default, allow anonymous search and will require
+; a SEARCH_DN and SEARCH_PW.
+;SEARCH_DN = cn=root
+;SEARCH_PW = rootpassword
+
+; FOLLOW_REFERRALS
+; Some LDAP servers generate "referrals", which tell the client contact
+; another LDAP server.  By default, the LDAP plugins will honor referal
+; requests.  In some cases this behavior is not desirable, and this
+; may be disable by setting this parameter to false.
+;
+; If you notice LDAP error "rc=1 (Operations error)" in the db2diag.log
+; in a MSAD environment, should you try setting this to false.
+;
+; This is optional, and defaults to true.
+;FOLLOW_REFERRALS = false
+
+; DEBUG
+; Dump some extra information to the db2diag.log to aid in debugging
+; LDAP related issues.  Most of the additional information will be
+; logged at DIAGLEVEL 4 (INFO).
+; Optional, defaults to false.
+;DEBUG = true

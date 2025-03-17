@@ -1,0 +1,1268 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2idefs
+# 
+# FUNCTION: Defines a set of global functions and variables to be used
+#           in the instance related scripts
+#
+#############################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# These return values are used for the DB2 install validating tool (db2val)
+# Since they are used in both db2iutil and db2val, I initialized them here.
+VAL_OK=0
+VAL_VALIDATION_WARNING=1
+VAL_SYNTAX_ERROR=2
+VAL_NO_AUTHORITY=3
+VAL_LOG_ERROR=4
+VAL_VALIDATION_ERROR=9
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+#-----------------------------------------------------------------------
+# Name       - is_usable
+# Function   - Check if the DB2 installation can be managed by the current
+#              user.
+# Parameters - $1 is the installation directory of the DB2 product(s).
+#              $2 is the program name calling this function
+#              $3 : 0 to display the DBI message 
+# Returns    - 0 if usable
+#-----------------------------------------------------------------------
+
+# Check if the DB2 install is usable by the current user ID
+# to manage DB2 instances or install
+# 
+is_usable ()
+{
+    set ${setopts?}
+    db2path=$1
+    pgm_name=$2
+    show_msg=$3
+    is_usable_rc=0
+    is_usable_rc1=0
+    is_usable_rc2=0
+    show_files=""
+
+    if [ $# -lt 2 -o ! -d "${db2path?}" ]; then
+       echo "Usage: is_usable <DB2DIR> 1|0"
+       exit 67
+    fi 
+    ${db2path?}/instance/db2chkf -w ${db2path?}/profiles.reg 2>/dev/null 1>/dev/null
+    if [ $? -ne 0 ]; then
+       is_usable_rc1=1
+    fi
+    ${db2path?}/instance/db2chkf -w ${db2path?}/default.env 2>/dev/null 1>/dev/null
+    if [ $? -ne 0 ]; then
+       is_usable_rc2=1
+    fi
+
+    if [ ${is_usable_rc1?} -ne 0 -a ${is_usable_rc2?} -ne 0 ]; then
+       show_files="${db2path?}/profiles.reg,${db2path?}/default.env" 
+    elif [ ${is_usable_rc1?} -ne 0 ]; then
+       show_files="${db2path?}/profiles.reg"
+    elif [ ${is_usable_rc2?} -ne 0 ]; then
+       show_files="${db2path?}/default.env"
+    fi
+
+    if [ ${is_usable_rc1?} -ne 0 -o ${is_usable_rc2?} -ne 0 ]; then
+       is_usable_rc=1
+       if [ "X${show_msg?}" = "X0" ]; then
+          display_msg ${DB2CAT?} 288 \
+                    'DBI1288E The execution of the program %s failed. This
+program failed because you do not have write permission on the
+directory or file %s.\n' "${pgm_name?}" "${show_files?}"
+       fi 
+    fi
+    return ${is_usable_rc?}
+}
+
+sh_which_ ()
+{
+    set ${setopts?}
+
+    file=$1
+    search_path=$2
+    if [ -z "${search_path?}" ]
+    then
+      search_path="$PATH"
+    fi
+    echo ${search_path?} | sed -e 's/:/\
+/g' | while read path; do
+    if [ -x "${path?}/${file?}" ]
+    then
+        echo "${path?}/${file?}"
+        return 0
+    fi
+    done
+}
+
+sh_which ()
+{
+    set ${setopts?}
+    text=`sh_which_ "$@"`
+    # set return code based on whether there is any output.
+    if [ -z "${text?}" ]
+    then
+        return 1
+    else
+        echo "${text?}"
+        return 0
+    fi
+}
+
+TRUE=0
+FALSE=1
+
+if [ -z "${TRACTRAXLOG}" ]; then
+    _trace_tee ()
+    {
+      cat
+    }
+else
+    _trace_tee ()
+    {
+      tee -a ${TRACTRAXLOG}
+    }
+fi
+
+# To display a message when a function is called
+trac ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Entering: $*" >&2 | _trace_tee
+    fi
+}
+
+# To display a message when exiting a function
+trax()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## Exiting: $*"  >&2 | _trace_tee
+    fi
+}
+
+# To display a message when "debug" is set
+dmsg ()
+{
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        echo "## $*"  >&2 | _trace_tee
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - display_msg
+# Function   - Displays a message from the message catalog
+# Parameters - $1 - name of the message catalog
+#            - $2 - message number
+#            - $3 - default message string
+#            - $4,$5,$6 - arguments to substitute in msg string, if needed
+#-----------------------------------------------------------------------
+display_msg()
+{
+    set ${setopts?}
+
+    unset catname msgid deftmsg msgstr warnmsg infomsg
+    catname="$1"
+    msgid=$2
+    deftmsg="$3"
+    warnmsg=${FALSE?}
+    infomsg=${FALSE?}
+
+    echo ${deftmsg?} | grep "DBI....W" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        warnmsg=${TRUE?}
+    fi
+
+    echo ${deftmsg?} | grep "DBI....I" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        infomsg=${TRUE?}
+    fi
+
+    # Do not display message if NODISPLAY is set
+    if [ -z "${NODISPLAY}" ]; then
+        NODISPLAY=${FALSE?}
+    fi
+
+    if [ ${NODISPLAY?} -eq ${TRUE?} ]; then
+        return ${TRUE?}
+    fi
+
+    # Increment the message count only if it is not a warning or information
+    if [ ${warnmsg?} -eq ${FALSE?} -a ${infomsg?} -eq ${FALSE?} ]; then
+
+        # if MSGCOUNT isn't set, we'll just get 1, hence don't use the ? check. 
+        MSGCOUNT=`expr "${MSGCOUNT:-0}" + 1`
+    fi
+
+    shift ; shift ; shift
+
+    disp_msg_file=`sh_which disp_msg \
+         ${DISPMSGDIR:=${DB2DIR}}:${DISPMSGDIR?}/instance:${DISPMSGDIR?}/bin:${DISPMSGDIR?}/..`
+ 
+   sh_which_rc=$?
+ 
+    if [ -z "${DISPMSGLOG}" ]; then
+        dispmsg_tee_cmd="cat"
+    else
+        dispmsg_tee_cmd="tee -a ${DISPMSGLOG}"
+    fi
+
+    if [ ${sh_which_rc?} -eq 0 ]; then
+        ${disp_msg_file?} 1 ${msgid} ${catname} "${deftmsg}" "$@" 2>&1 | ${dispmsg_tee_cmd?}
+    else
+        echo "disp_msg does not exist"
+    fi
+
+}
+
+# To display a message
+say ()
+{
+    echo " $@" 2>&1 | tee -a ${DB2INSTLOG?}
+}
+
+# Find a word ($1) in a string ($2)
+findwordinstr ()
+{
+    trac findwordinstr $@
+    set ${setopts?} 
+
+    word=$1
+    string="$2"
+    found=${FALSE?}
+
+    for inword in ${string?}; do
+        if [ "X${word?}" = "X${inword?}" ]; then
+            dmsg "\"${word?}\" is in string=\"${string?}\""
+            found=${TRUE?}
+            break
+        fi
+    done
+
+    trax findwordinstr
+    return ${found?}
+}
+
+set_lang_internal ()
+{
+    set ${setopts?}
+    bindir="$1"
+    msgdir="$2"
+    lang="$3"
+
+    CMD_DB2LANGDIR="${bindir?}/db2langdir"
+
+    if [ "X$lang" != "X" ]; then
+       LANG_CUSTOM=0
+    else
+       LANG_CUSTOM=1
+    fi
+    # Default locale name and locale-specific message directory
+    
+    LANG=${LANG:-C}
+    locname=${LANG?}
+    
+    if [ ${LANG_CUSTOM?} -eq 0 ]; then
+       locname=`${CMD_DB2LANGDIR?} ${lang?} -locale`
+       DB2_LANG_JAVA=${locname?}
+    fi
+
+    langdir=`${CMD_DB2LANGDIR?} ${locname?}`
+    clangdir=`${CMD_DB2LANGDIR?} C`
+
+    if [ -f ${msgdir?}/${langdir?}/db2install.cat -a -f ${msgdir?}/${langdir?}/db2istring.cat ]; then
+        DB2CAT="${msgdir?}/${langdir?}/db2install.cat"
+        DB2ISTR="${msgdir?}/${langdir?}/db2istring.cat"
+        LANGUAGEDIR=${langdir?}
+    elif [ -f ${msgdir?}/${clangdir?}/db2install.cat -a -f ${msgdir?}/${clangdir?}/db2istring.cat ]; then
+        DB2CAT="${msgdir?}/${clangdir?}/db2install.cat"
+        DB2ISTR="${msgdir?}/${clangdir?}/db2istring.cat"
+        LANGUAGEDIR=${clangdir?}
+    else
+        echo "DBI1055E The message file cannot be found."
+        echo
+        echo "Explanation:  The message file required by this"
+        echo "script is missing from the system; it may have been"
+        echo "deleted or the database products may have been loaded"
+        echo "incorrectly."
+        echo
+        echo "User Response:  Verify that the product option containing"
+        echo "the message file is installed correctly.  If there are"
+        echo "verification errors; reinstall the product option."
+        exit 67
+    fi
+
+    # check if the locale exists.  If not, we'll set LANG to C for any
+    # subprocesses.
+    locale -a 2> /dev/null | grep '^'${locname?}'$' > /dev/null
+    if [ $? -ne 0 ]
+    then
+        locname=C
+    fi
+
+    # if a language was passed in, set LANG - but if not, leave it alone.
+    # (if it isn't a valid language, well, try resetting anyway)
+    if [ ${LANG_CUSTOM?} -eq 0 ]
+    then
+        locale -a 2> /dev/null | grep '^'${LANG:-C}'$' > /dev/null
+        if [ $? -eq 0 ]; then
+            LANG=${locname?}
+        else 
+            # if locname is valid, set LANG to locname
+            locale -a 2> /dev/null | grep '^'${locname:-C}'$' > /dev/null
+            if [ $? -eq 0 ]; then
+                LANG=${locname?}
+            fi
+        fi
+    fi
+
+    # Set LANG and NLSPATH variables for use by dspmsg command
+    NLSPATH="${msgdir?}/%L/%N:${msgdir?}/${clangdir?}/%N"
+    SHORTLANG=`${CMD_DB2LANGDIR?} ${LANG:-C} -short`
+
+    export LANG NLSPATH
+}
+# Check if copy owner is running the prog
+chk_copy_owner ()
+{
+    set ${setopts?}
+
+    if [ $# -ne 1 ]; then
+       echo "Usage chk_copy_owner <install path>"
+       exit 67
+    fi
+    tmp_install_path=$1
+    tmp_bin_dir="${tmp_install_path?}/bin"
+    if [ -f "${tmp_install_path?}/doc/bin/db2usrinf" ]; then
+       tmp_bin_dir="${tmp_install_path?}/doc/bin"
+    fi
+    if [ -f ${tmp_bin_dir?}/db2usrinf ]; then
+      tmp_runner=`${tmp_bin_dir?}/db2usrinf -n -E`
+    else
+      display_msg ${DB2CAT?} 95 \
+          "DBI1095W  The file or directory %s cannot be found." ${tmp_bin_dir?}/db2usrinf
+      exit 67
+    fi
+
+    find ${tmp_bin_dir?} -user ${tmp_runner?} -name db2usrinf | grep db2usrinf 1>/dev/null 2>/dev/null
+    tmp_rc=$?
+    if [ ${tmp_rc?} -ne 0 ]; then
+        if [ `${tmp_bin_dir?}/db2usrinf -E` -eq 0 ]; then
+           find ${tmp_bin_dir?} -user bin -name db2usrinf | grep db2usrinf 1>/dev/null 2>/dev/null
+           tmp_rc=$?
+        fi
+        if [ ${tmp_rc?} -ne 0 ]; then
+           display_msg ${DB2CAT?} 149 \
+               'DBI1149E You have to be the owner of the install copy to execute this program.'
+           exit 67
+        fi
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - get_locale
+# Function   - Sets the locale environment variable and verifies that
+#              the message file is present.
+# Parameters - None
+# Returns    - Exits if message file is not found.
+#-----------------------------------------------------------------------
+get_locale()
+{
+    set ${setopts?}
+    set_lang_internal ${DB2DIR?}/bin ${DB2DIR?}/msg
+}
+
+# This function change permissions for given files
+# and/or directories. Usage:
+#    mkpermission [-R] files/dirs list
+#       - option -R is needed for recursive operations
+mkpermission ()         # permissions  dir1 file1 dir2.....
+{
+    trac mkpermission $@
+    set ${setopts?}
+    recurs=""           # Variable to identify recursive operation
+
+    if [ "$1" = "-R" ]; then
+        recurs="$1"
+        shift
+    fi
+
+    perms="$1"          # File/Dir permissions
+    shift
+    files="$@"          # Everything else is file/dir name(s)
+
+    # Change permissions for files/dirs
+    chmod ${recurs?} ${perms?} ${files?}
+    if [ $? -ne 0 ]; then
+        display_msg ${DB2CAT?} 91 \
+            'DBI1091E An attempt to change permissions for %s failed.' \
+            ${files?}
+        return ${FALSE?}
+    fi
+
+    trax mkpermission
+    return ${TRUE?}
+}
+
+#-----------------------------------------------------------------------
+# Name       - ckpermission
+# Function   - Compares the given permissions with the 
+#              given files' actual permissions
+# Parameters - $1 - permission string [same syntax allowed as chmod]
+#            - $2,$3... - Files to check with
+# Returns    - TRUE if ALL the files match with the given permission set
+#            - FALSE otherwise
+#-----------------------------------------------------------------------
+ckpermission ()         # permissions  dir1 file1 dir2.....
+{
+    trac ckpermission $@
+    set ${setopts?}
+
+    fperm="$1"
+    shift;
+    fname_list=$@
+    rc=${TRUE?}
+    testFile="/tmp/db2TestFile.$$"
+    
+    #Sanity Checking--------------------------------------------------------
+    permValues=`echo ${fperm?} | sed s/,/" "/g 2>/dev/null`
+    for value in ${permValues?}; do
+       echo ${value?} | grep -E "^[ugo]*[=+-]*[rwxts]*$" 1>/dev/null 2>/dev/null
+       if [ $? -eq $FALSE ]; then
+          exit ${FALSE?}
+       fi
+    done 
+    
+    for file in ${fname_list?}; do
+        if [ -f ${file?} -o -d ${file?} ]; then
+            perm=`ls -dl ${file?} | awk '{print $1}' 2>/dev/null`
+            pUser=`echo  ${perm?} | cut -c2-4 2>/dev/null`
+            pGroup=`echo ${perm?} | cut -c5-7 2>/dev/null`
+            pOther=`echo ${perm?} | cut -c8-10 2>/dev/null`
+        else
+            rc=${FALSE?}
+            break
+        fi
+
+        if [ -f ${file?} ]; then
+            touch ${testFile?}
+        else
+            mkdir ${testFile?}
+        fi
+ 
+        newUser=`echo ${pUser?}   | sed 's/\-//g' | sed 's/s/xs/g' | sed 's/S/s/g' | sed 's/t/xt/g' 2>/dev/null`
+        newGroup=`echo ${pGroup?} | sed 's/\-//g' | sed 's/s/xs/g' | sed 's/S/s/g' | sed 's/t/xt/g' 2>/dev/null`
+        newOther=`echo ${pOther?} | sed 's/\-//g' | sed 's/s/xs/g' | sed 's/S/s/g' | sed 's/t/xt/g' 2>/dev/null`
+        newPerm="u=${newUser?},g=${newGroup?},o=${newOther?}"
+        chmod ${newPerm?} ${testFile?}
+        chmod ${fperm?} ${testFile?}
+    
+        permNew=`ls -dl ${testFile?} | awk '{print $1}' 2>/dev/null`
+        if [ ${perm?} != ${permNew?} ]; then
+            rc=${FALSE?}
+            break
+        fi
+
+        rm -rf ${testFile?}
+    done
+    
+    trax ckpermission
+    return ${rc?}
+}
+
+# Create directories and set perms if -m option is used
+# To create directories and set perms
+#      mkdirectory -m 755 dir1 dir2 ......
+# To create directories without setting perms
+#      mkdirectory dir1 dir2 ......
+mkdirectory ()        # dir  [perms]
+{
+    trac mkdirectory $@
+    set ${setopts?}
+
+    if [ "X$1" = "X-m" ]; then
+        mode=$2
+        shift ; shift
+    else
+        mode=""
+    fi
+
+    dirname="$@"
+    if [ -d "${dirname?}" ]; then
+        display_msg ${DB2CAT?} 82 \
+            'DBI1082E The file or directory %s already exists.' ${dirname?}
+        return ${FALSE?}
+    fi
+
+    mkdir ${dirname?}
+    if [ $? -ne 0 ]; then
+        display_msg ${DB2CAT?} 84 \
+            'DBI1084E An attempt to create %s failed.' ${dirname?}
+        stop_prog 1
+    else
+        dmsg "Created directory \"${dirname?}\""
+    fi
+
+    if [ "X${mode?}" != "X" ]; then
+        mkpermission ${mode?} "${dirname?}"
+    fi
+
+    trax mkdirectory
+    return ${TRUE?}
+}
+
+# Copy a single file from $from_dir directory to $to_dir directory
+# If -f flag is specified, file copy overwrite existing file
+# If -n flag is specified, file is copied with a new name
+# To copy file from one directory to another:
+#      copyfile from_dir to_dir filename
+# To copy file from one dir to another with a new name:
+#      copyfile -n from_dir to_dir filename newfilname
+#
+copyfile ()        # [-n] from_dir  to_dir  filename [ newfilename ]
+{
+    trac copyfile $@
+    set ${setopts?}
+    force_copy=${FALSE?}
+
+    if [ "$1" = "-f" ]; then
+        force_copy=${TRUE?}
+        shift
+    fi
+
+    if [ "$1" = "-n" ]; then
+        fromdir=$2
+        todir=$3
+        file=$4
+        newfilename=$5
+    else
+        fromdir=$1
+        todir=$2
+        file=$3
+        newfilename=${file?}
+    fi
+
+    # Check if the file already exists
+    if [ ! -f ${todir?}/${newfilename?} -o ${force_copy?} -eq ${TRUE?} ]; then
+        dmsg "Copying file ${fromdir?}/${file?}..."
+        if [ ! -d ${todir?} ]; then
+            display_msg ${DB2CAT?} 81 \
+                'DBI1081E The file or directory %s is missing.' ${todir?}
+            return ${FALSE?}
+        fi
+
+        if [ ! -r ${fromdir?}/${file?} ]; then
+            display_msg ${DB2CAT?} 81 \
+                'DBI1081E The file or directory %s is missing.' \
+                ${fromdir?}/${file?}
+            return ${FALSE?}
+        fi
+
+        rm -f ${todir?}/${newfilename?} 2>&1 1> /dev/null
+        cp ${fromdir?}/${file?} ${todir?}/${newfilename?}
+        if [ $? -ne 0 ]; then
+            display_msg ${DB2CAT?} 86 \
+                'DBI1086E An attempt to copy the file or directory %s to %s failed.' \
+                ${fromdir?}/${file?} ${todir?}/${newfilename?}
+            return ${FALSE?}
+        fi
+    else
+        display_msg ${DB2CAT?} 82 \
+            'DBI1082E The file or directory %s already exists.' \
+            ${todir?}/${newfilename}
+        return ${FALSE?}
+    fi
+
+    trax copyfile
+    return ${TRUE?}
+}
+
+# Checks that input ($1) is a dir and "r" and "x" perms are set
+chk_dir ()
+{
+    trac chk_dir $@
+    set ${setopts?}
+
+    dirname=$1
+    ok=${FALSE?}
+    if [ -d ${dirname?} -a -r ${dirname?} -a -x ${dirname?} ]; then
+        ok=${TRUE?}
+    fi
+
+    dmsg "Function name = chk_dir,  Return code = ${ok?}"
+    trax chk_dir
+    return ${ok?}
+}
+
+#-----------------------------------------------------------------------
+# Name       - rmlink
+# Function   - Remove the given link if exists and points to a specified
+#              location
+# Parameters - $1 is the given link to be removed, and
+#              $2 is the location the link points to.
+# Returns    - 0
+#-----------------------------------------------------------------------
+rmlink()
+{
+    set ${setopts?}
+
+    tmplink=$1
+
+    if [ -h ${tmplink?} ]; then
+        foundit=`ls -l ${tmplink?} 2>/dev/null | grep $2`
+        if [ ! -z "${foundit?}" ]; then
+            rm ${tmplink?}
+        fi
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - mklink
+# Function   - Create the given link if not exists
+# Parameters - $1 is the given link to be created, and
+#              $2 is the location the link points to.
+# Returns    - 0
+#-----------------------------------------------------------------------
+mklink()
+{
+    set ${setopts?}
+
+    tmplink=$1
+
+    if [ ! -h ${tmplink?} ]; then
+        rm -f ${tmplink?}
+        ln -s $2 ${tmplink?}
+    else
+        foundit=`ls -l ${tmplink?} | grep $2`
+        if [ -z "${foundit?}" ]; then
+            display_msg ${DB2CAT?} 87 \
+                'DBI1087E An attempt to create the link %s failed.' \
+                "${tmplink?}"
+        fi
+    fi
+}
+
+# Cleanup function
+cleanup ()
+{
+    set ${setopts?}
+
+    rmlog=${1:-"no"}  # Flag to remove logfile
+
+    # If not in debug mode
+    if [ ${DEBUG?} -eq ${FALSE?} ]; then
+        if [ ${MSGCOUNT?} -eq 0 -o ${rmlog?} = "yes" ]; then
+            rm -f ${DB2INSTLOG?}
+        fi
+    fi
+# wsdbu01226334myk
+#    if [ -f ${DB2INSTLOG?} -a "X${rmlog?}" != "Xlog"  ]; then
+#        display_msg ${DB2CAT?} 79 \
+#            'DBI1079I Output is saved in the log file %s.' ${DB2INSTLOG?}
+#    fi
+
+    # Remove all temporary and lock files
+    rm -f ${USERIFILE?} ${TMPFILE1?} ${TMPFILE2?} ${TMPFILE3?}
+}
+
+# stop_prog - cleanup and exit
+stop_prog ()
+{
+    set ${setopts?}
+
+    sig=${1:-1}
+    save_log=$2
+
+    rm -f ${TMPFILE4?}
+    touch ${TMPFILE4?}
+
+    if [ ${sig?} -eq 2 ]; then
+        display_msg ${DB2CAT?} 66 \
+            'DBI1066E Program %s terminated by request.' ${PROGNAME?} | tee ${TMPFILE4?}
+        cleanup yes
+    fi
+    if [ ${sig?} -gt 2 ]; then
+        display_msg ${DB2CAT?} 69 \
+            'DBI1069E Unexpected error. Function = %s, Return code = %s.' \
+            stop_prog ${sig?} | tee ${TMPFILE4?}
+    fi
+
+    cleanup ${save_log?}  # Remove all temp and lock files
+
+    if [ ${sig?} -eq 0 ]; then
+        display_msg ${DB2CAT?} 70 \
+            'DBI1070I Program %s completed successfully.' ${PROGNAME?}
+        display_msg ${DB2CAT?} 70 \
+            'DBI1070I Program %s completed successfully.' ${PROGNAME?} | sed "s/'/\\\'/g" > ${TMPFILE4?}
+        if [ "X${save_log?}" != "Xlog" ]; then
+           cleanup yes
+        else
+           cleanup no
+        fi 
+    else
+        # Undo all changes done by this program
+        if [ ${UNDOCHG?} -eq ${TRUE?} ]; then
+            undo_chg
+        fi
+    fi
+
+    case ${PROGNAME?} in
+        db2icrt|db2icrt_local|db2nrcfg|db2idrop|db2idrop_local|db2iupdt|db2iupdt_local|db2nrupdt|db2imigr|db2iupgrade|db2iupgrade_local|db2nrupgrade)
+            if [ ${PROGNAME?} != "db2icrt_local" -o ${sig?} -eq 0 ]; then
+                log_instance_activity ${sig?} "`cat ${TMPFILE4?}`"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+
+    rm -f ${TMPFILE4?}
+    exit ${sig?}
+}
+
+# Check if root is running the prog
+chk_root ()
+{
+    set ${setopts?}
+
+    if [ `${DB2DIR?}/bin/db2usrinf -E` -ne 0 ]; then
+        display_msg ${DB2CAT?} 52 \
+            'DBI1052E You must be root to execute this program.'
+        rm -f ${DB2INSTLOG?}
+        exit 1
+    fi
+}
+
+# Add the DB2 service record if needed
+add_servicerec ()
+{
+    set ${setopts?}
+
+    if [ -f ${DB2DIR}/bin/db2chglibpath -a -f ${DB2DIR}/bin/db2 ]; then
+       db2_rpath=`${DB2DIR}/bin/db2chglibpath -q ${DB2DIR}/bin/db2 | grep /DoNotCreateThisPath_marker1_for_chglibpath`
+       if [ $? -eq ${TRUE?} ]; then
+          echo "ERROR:  The embedded runtime path in ${DB2DIR}/bin/db2 is incorrect:"
+          echo "        ${db2_rpath?}"
+          echo
+          echo "ACTION: Please run ${DB2DIR}/install/db2chgpath and rerun the previous command."
+          echo "        Contact IBM Support if the problem persists."
+          exit 1
+       fi
+    elif [ ! -f ${DB2DIR}/bin/db2chglibpath ]; then
+       echo "DBI1095W File or directory ${DB2DIR?}/bin/db2chglibpath not found."
+       exit 1
+    elif [ ! -f ${DB2DIR}/bin/db2 ]; then
+       echo "DBI1095W File or directory ${DB2DIR}/bin/db2 not found."
+       exit 1
+    fi
+    ${DB2DIR}/bin/db2greg -getservrec service=DB2,installpath=${DB2DIR?} | grep DB2 1>/dev/null 2>/dev/null
+    if [ $? -ne ${TRUE?} ]; then
+       ${DB2DIR}/bin/db2greg -addservrec service=DB2
+    fi 
+    db2ls_linkdir=/usr/local/bin
+    if [ ! -d ${db2ls_linkdir?} -a ! -f  ${db2ls_linkdir?} -a ! -h  ${db2ls_linkdir?}  ]; then
+       mkdir -p ${db2ls_linkdir?} 2>/dev/null 1>/dev/null
+       if [ -d ${db2ls_linkdir?} ]; then
+           chmod ugo+rx ${db2ls_linkdir?} 2>/dev/null 1>/dev/null
+           chmod ugo+rx /usr/local 2>/dev/null 1>/dev/null
+       fi
+
+    fi
+    if [ ! -h ${db2ls_linkdir?}/db2ls -a -d ${db2ls_linkdir?} ]; then
+         ln -s ${DB2DIR?}/install/db2ls ${db2ls_linkdir?}/db2ls 2>/dev/null 1>/dev/null
+    fi
+    return 0
+}
+
+# Check if non-root is running the prog
+chk_nonroot ()
+{
+    set ${setopts?}
+
+    if [ `${DB2DIR?}/bin/db2usrinf -E` -eq 0 ]; then
+        display_msg ${DB2CAT?} 51 \
+            'DBI1051E You cannot execute this program as root.'
+        rm -f ${DB2INSTLOG?}
+        exit 1
+    fi
+}
+
+#-----------------------------------------------------------------------
+# Name       - chg_owngrp
+# Function   - Change owner and group for a directory or file
+# Parameters - $1 - owner's name or "-R" for recursive
+#            - $2 - owner's name, IF first argument is "-R"
+#                 - group's name, otherwise
+#            - $3 - group's name, IF first argument is "-R"
+#                 - name of file/directory, otherwise
+#            - $4 - name of file/directory ONLY IF first argument is "-R"
+# Syntax     - chg_owngrp [-R] owner group file
+#-----------------------------------------------------------------------
+chg_owngrp ()
+{
+    trac chg_owngrp $@
+    set ${setopts?}
+
+    if [ "$1" = "-R" ]; then
+        recur="$1"
+        shift
+    else
+        recur=""
+    fi
+
+    fowner="$1"
+    fgroup="$2"
+    shift ; shift
+    fname_list="$@"
+
+    for tmp_fname in ${fname_list?}; do
+        if [ -h  "${tmp_fname?}" ]; then 
+              ls -lL ${tmp_fname?} 2>&1 1> /dev/null 
+              if [ $? -ne 0 ]; then
+                 continue
+              fi
+              tmp_link_target=`ls -l ${tmp_fname?} | awk '{print $(NF-1) }' | grep '\->' `
+              if [ "X${tmp_link_target?}" != "X" ]; then 
+                     continue
+              fi
+        fi 
+        chown ${recur?} ${fowner?} ${tmp_fname?}
+        if [ $? -ne 0 ]; then
+            display_msg ${DB2CAT?} 92 \
+              'DBI1092E An attempt to change ownership for %s failed.' ${tmp_fname?}
+            stop_prog 1
+        fi
+
+chgrp ${recur?} ${fgroup?} ${tmp_fname?}
+
+        if [ $? -ne 0 ]; then
+            display_msg ${DB2CAT?} 93 \
+              'DBI1093E An attempt to change group ownership for %s failed.' \
+              ${tmp_fname?}
+            stop_prog 1
+        fi
+    done
+    trax chg_owngrp
+    return ${TRUE?}
+}
+
+chk_owngrp ()
+{
+    trac chk_owngrp $@
+    set ${setopts?}
+    
+    fowner="$1"
+    fgroup="$2"
+    shift ; shift
+    fname_list="$@"
+    rc=${TRUE?} 
+    
+    for file in ${fname_list?}; do
+        if [ -f ${file?} ]; then
+            name=`basename ${file?} 2>/dev/null`
+            owner=`ls -dl ${file?} | awk '{print $3}' 2>/dev/null`
+            group=`ls -dl ${file?} | awk '{print $4}' 2>/dev/null`
+    
+            if [ ${owner?} != ${fowner?} -o ${group?} != ${fgroup?} ]; then
+                rc=${FALSE?} 
+                break 
+            fi 
+        else 
+            rc=${FALSE?}
+            break 
+        fi 
+    done 
+    
+    trax chk_owngrp
+    return ${rc?}
+}
+
+#-----------------------------------------------------------------------
+# Name       - itma_running
+# Function   - Find out if ITMA is running for the specified instance
+# Parameters - $1 - instance Name
+# Returns    - 0 - if ITMA is running
+#              1 - if ITMA is NOT running
+#-----------------------------------------------------------------------
+itma_running ()
+{
+    trac itma_running $@
+    set ${setopts?}
+    itma_instance=$1
+    itma_daemon="kuddb2"
+    if [ $# -ne 1 ]; then
+       echo "Usage: itma_running <instance name>"
+       exit 67
+    fi
+    ps -ef | egrep "/kuddb2 " | egrep "_${itma_instance?}[ ]*$" 2>/dev/null 1>/dev/null
+    itma_running_rc=$?
+    trax itma_running
+    return ${itma_running_rc?}
+}
+
+#---------------------------------------------------------------------------
+# Name       - itma_updatecfg
+# Function   - update itma's kcirunas.cfg
+# Parameters - $1 - action (a for add and r for remove)
+#              $2 - instance name
+#              $3 - db2 install path
+# Returns    - 0 - action was done successfully or not needed
+#              1 - backup of current cfg file failed
+#              2 - the cfg file does not exist
+#              3 - update of the current cfg file failed for action a
+#              4 - first update of the current cfg file failed for action r
+#              5 - second update of the current cfg file failed for action r
+#              6 - existing temporary cfg file can not be removed
+#              7 - UpdateAutoRun.sh does not exist
+#---------------------------------------------------------------------------
+itma_updatecfg ()
+{
+    trac itma_updatecfg $@
+    set ${setopts?}
+    itma_update_action=$1
+    itma_instance=$2
+    itma_db2dir=$3
+    itma_updatecfg_rc=0
+
+    if [ $# -ne 3 ]; then 
+       echo "Usage: itma_updatecfg a|r <instance name> <db2dir for itma>"
+       exit 67
+    fi
+    if [ "X$itma_update_action" != "Xa" -a "X$itma_update_action" != "Xr" ]; then
+       echo "Usage: itma_updatecfg a|r <instance name>"
+       exit 67
+    fi
+
+    if [ ! -f "${itma_db2dir?}/itma/bin/UpdateAutoRun.sh" ]; then
+       return 7
+    fi
+    itma_cfg_file="${itma_db2dir?}/itma/config/kcirunas.cfg"
+    itma_cfg_tmp="${itma_db2dir?}/itma/config/kcirunas.cfg.$$"
+
+    if [ ! -f ${itma_cfg_file?} ]; then
+       return 2
+    fi
+
+    if [ "X$itma_update_action" = "Xa" ]; then
+       itma_cfg_save="${itma_db2dir?}/itma/config/kcirunas.cfg.pre_add_${itma_instance?}.$$"
+    else
+       itma_cfg_save="${itma_db2dir?}/itma/config/kcirunas.cfg.pre_remove_${itma_instance?}.$$"
+    fi
+
+    cp ${itma_cfg_file?} ${itma_cfg_save?} 2>/dev/null 1>/dev/null
+    if [ $? -ne 0 ]; then
+       return 1
+    fi
+
+    if [ -f ${itma_cfg_tmp?} ]; then
+       rm -f ${itma_cfg_tmp?}
+       if [ $? -ne 0 ]; then
+          return 6
+       fi
+    fi
+
+    grep "<[ ]*name[ ]*>[ ]*${itma_instance?}[ ]*</[ ]*name[ ]*>" ${itma_cfg_file?} 2>/dev/null 1>/dev/null
+    itma_instance_exist=$?
+    if [ "X$itma_update_action" = "Xa" -a ${itma_instance_exist?} -ne 0 ]; then
+       cat ${itma_cfg_file?} | while read line
+       do
+          echo "${line?}" >>${itma_cfg_tmp?}
+          echo ${line?} | grep -i "<[ ]*productCode[ ]*>[ ]*ud[ ]*</[ ]*productCode[ ]*>" 2>/dev/null 1>/dev/null
+          if [ $? -eq 0 ]; then
+             echo "  <instance>"                      >> ${itma_cfg_tmp?}
+             echo "   <name>${itma_instance?}</name>" >> ${itma_cfg_tmp?}
+             echo "   <user>${itma_instance?}</user>" >> ${itma_cfg_tmp?}
+             echo "  </instance>"                     >> ${itma_cfg_tmp?}
+          fi
+       done
+
+       mv ${itma_cfg_tmp?} ${itma_cfg_file?}
+       if [ $? -ne 0 ]; then
+          return 3
+       fi
+       ${itma_db2dir?}/itma/bin/UpdateAutoRun.sh -h ${itma_db2dir?}/itma 2>/dev/null 1>/dev/null
+    fi
+
+    if [ "X$itma_update_action" = "Xr" -a ${itma_instance_exist?} -eq 0 ]; then
+       cat ${itma_cfg_file?} | while read line
+       do
+          echo ${line?} | grep "<[ ]*name[ ]*>${itma_instance?}</[ ]*name[ ]*>" 2>/dev/null 1>/dev/null
+          name_rc=$?
+          echo ${line?} | grep "<[ ]*user[ ]*>${itma_instance?}</[ ]*user[ ]*>" 2>/dev/null 1>/dev/null
+          user_rc=$?
+          if [ ${name_rc?} -ne 0 -a ${user_rc?} -ne 0 ]; then
+             echo ${line?} >> ${itma_cfg_tmp?}
+          fi
+       done
+       mv ${itma_cfg_tmp?} ${itma_cfg_file?}
+       if [ $? -ne 0 ]; then
+          return 4
+       fi
+
+       itma_cfg_last_line=""
+       itma_cfg_start=0
+       itma_cfg_line_skip=1
+       cat ${itma_cfg_file?} | while read line
+       do
+          if [ ${itma_cfg_start?} -eq 0 ]; then
+             itma_cfg_last_line=${line?}
+             itma_cfg_start=1
+          else
+            echo ${line?} | grep "</[ ]*instance[ ]*>" 2>/dev/null 1>/dev/null
+            if [ $? -eq 0 ]; then
+               itma_cfg_line_skip=1
+               echo ${itma_cfg_last_line?} | grep "<[ ]*instance[ ]*>" 2>/dev/null 1>/dev/null
+               if [ $? -ne 0 ]; then
+                  if [ ${itma_cfg_start?} -ne 0 ]; then
+                     echo ${itma_cfg_last_line?} >> ${itma_cfg_tmp?}
+                     itma_cfg_last_line=${line?}
+                  fi
+               else
+                  itma_cfg_last_line=""
+               fi
+            else
+               if [ ${itma_cfg_line_skip?} -ne 0 ]; then
+                  echo ${itma_cfg_last_line?} >> ${itma_cfg_tmp?}
+               else
+                  echo "" >> ${itma_cfg_tmp?}
+               fi
+               echo ${line?} | grep "^[ ]*$" 2>/dev/null 1>/dev/null
+               if [ $? -ne 0 ]; then
+                  itma_cfg_last_line=${line?}
+                  itma_cfg_line_skip=1
+               else
+                  itma_cfg_line_skip=0
+               fi
+            fi
+          fi
+       done
+       echo ${itma_cfg_last_line?} >> ${itma_cfg_tmp?}
+       mv ${itma_cfg_tmp?} ${itma_cfg_file?}
+       if [ $? -ne 0 ]; then
+          return 5
+       fi
+       ${itma_db2dir?}/itma/bin/UpdateAutoRun.sh -h ${itma_db2dir?}/itma 2>/dev/null 1>/dev/null
+    fi
+    trax itma_updatecfg
+    return ${itma_updatecfg_rc?}
+}
+
+#-----------------------------------------------------------------------
+# Name       - nis_running
+# Function   - Find out if NIS (or NIS+) is running
+# Returns    - 0 - if NIS is running
+#              1 - if NIS is NOT running
+#-----------------------------------------------------------------------
+nis_running ()
+{
+    trac nis_running $@
+    set ${setopts?}
+
+    rc2=1
+
+    numnis=`ps -ef | egrep "ypbind|nis_cachemgr" 2>/dev/null | \
+           grep -v "grep" 2>/dev/null | wc -l | \
+           awk '{print $1}'`
+
+    if [ ${numnis?} -ne 0 ]; then
+        rc2=0
+    else
+        rc2=1
+    fi
+
+    trax nis_running
+    return ${rc2?}
+}
+
+#-----------------------------------------------------------------------
+# Name       - get_userinfo
+# Function   - To get info about the user from /etc/passwd file or
+#              NIS passwd map and place the info in $USERIFILE file
+#            - set to value of the variable FOUND_SRC (which command
+#              was successful in finding the user info
+#                     FOUND_SRC=1 if 'logins' command got the info
+#                     FOUND_SRC=2 if 'ypmatch' command got the info
+# Parameters - $1 - instance Name
+# Returns    - 0 - if user-info is found
+#              1 - if user-info is NOT found
+#-----------------------------------------------------------------------
+get_userinfo ()
+{
+    trac get_userinfo $@
+    set ${setopts?}
+
+    loginid=$1
+    rc1=1
+    FOUND_SRC=0          # identifies which cmd found the user-info
+
+    rm -f ${USERIFILE?}
+
+    cat /etc/passwd |grep "^${loginid?}:" 1>/dev/null 2>/dev/null
+    if [ $? -eq 0 ]; then
+        userinfo=`cat /etc/passwd | grep "^${loginid?}:" | \
+        awk -F: '{print $1":userpw:"$3":"$4":"$5":"$6":"$7}'` 
+        useruid=`echo ${userinfo?} | cut -d: -f3 `
+        usergid=`echo ${userinfo?} | cut -d: -f4 `
+        usergname=`cat /etc/group |grep ":${usergid?}:" | cut -d: -f1` 
+        newuserinfo=`echo ${userinfo?} | sed "s/${useruid?}/${usergname?}/g"`
+        echo ${newuserinfo?} | sed "s/userpw/${useruid?}/g" >${USERIFILE?}
+        rc1=$?
+        FOUND_SRC=1
+    fi
+
+    # Make another check if NIS is running.
+    nis_running
+    numnis=$?
+
+    if [ ${rc1?} -eq 1 -a ${numnis?} -eq 0 ]; then
+        /bin/ypmatch ${loginid?} passwd > ${USERIFILE?} 2>&1
+        if [ $? -eq 0 ]; then
+            rc1=0
+            FOUND_SRC=2
+        else
+            rc1=1
+        fi
+    fi
+
+    if [ ${DEBUG?} -eq ${TRUE?} ]; then
+        dmsg "Contents of USERIFILE = "
+        cat ${USERIFILE?} 2>&1 | tee -a ${DB2INSTLOG?}
+    fi
+
+    trax get_userinfo
+    return ${rc1?}
+}
+
+# Find the home dir for given user ID. Set environment variable USERHOME
+find_homedir ()
+{
+    trac find_homedir $@
+    set ${setopts?}
+
+    username=$1
+
+    # is the user valid?
+    if ${DB2DIR?}/bin/db2usrinf -q ${username?}
+    then
+        USERHOME=`${DB2DIR?}/bin/db2usrinf -d ${username?}`
+    else
+        display_msg ${DB2CAT?} 131 \
+            'DBI1131E The user ID %s is invalid.' ${username?}
+        stop_prog 1
+    fi
+
+    dmsg "User home dir = ${USERHOME?}"
+
+    trax find_homedir
+    return 0
+}
+
+# Find the primary group for specified userid and set environment variable
+# USERPGRP.
+find_primgrp ()
+{
+    trac find_primgrp $@
+    set ${setopts?}
+
+    username=$1
+
+    # is the user valid?
+    if ${DB2DIR?}/bin/db2usrinf -q ${username?}
+    then
+        USERPGRP=`${DB2DIR?}/bin/db2usrinf -g ${username?}`
+        if [ -z "${USERPGRP?}" ]; then
+            display_msg ${DB2CAT?} 135 \
+                'DBI1135E The primary group %s of the user ID %s is invalid.' \
+                $USERPGRP $username
+            stop_prog 1
+        fi
+    else
+        display_msg ${DB2CAT?} 131 \
+            'DBI1131E The user ID %s is invalid.' ${username?}
+        stop_prog 1
+    fi
+
+    dmsg "User primary group = ${USERPGRP?}"
+    trax find_primgrp
+    return 0
+}
+
+clean_dpf_log_dir()
+{
+  trac clean_dpf_log_dir $@
+  set ${setopts?}
+
+  dpf_log_dir="${INSTHOME?}/sqllib/ctrl/.cleandpf"
+
+  if [ -d ${dpf_log_dir?} ]; then
+    rm -rf ${dpf_log_dir?}
+  fi
+    mkdirectory -m 777 ${dpf_log_dir?}
+
+  trax clean_dpf_log_dir
+}
+
+#
+# Misc variables
+#
+
+TRUE=0                  # True variable
+FALSE=1                 # False variable
+PROCID=$$             # Process ID
+
+MSGCOUNT=0              # Message count
+MAXDB2FILESIZE=2097151  # Max file size for instances
+UMASK=022               # File create mask for instances
+

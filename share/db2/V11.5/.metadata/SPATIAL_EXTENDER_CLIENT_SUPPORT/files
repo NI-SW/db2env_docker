@@ -1,0 +1,10 @@
+.metadata/SPATIAL_EXTENDER_CLIENT_SUPPORT/files:
+.metadata/SPATIAL_EXTENDER_CLIENT_SUPPORT/prereqs:12
+.metadata/SPATIAL_EXTENDER_CLIENT_SUPPORT/spec:406
+bin/db2se:436776
+bin/gseidx:237904
+bnd/gseClAdv.bnd:2444
+bnd/gseClIdx.bnd:9410
+bnd/gseClSQL.bnd:999
+samples/extenders/spatial/customers.data:53234
+samples/extenders/spatial/runGseDemo:124504

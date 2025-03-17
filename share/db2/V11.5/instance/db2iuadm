@@ -1,0 +1,996 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+# NAME     : db2iudbm
+# TYPE     : sh (Bourne shell)
+# FUNCTION : Script to update permissions in 'adm'-directory
+#
+########################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+PROGNAME=`basename $0`             # Program name
+TRUE=0                  # True variable
+FALSE=1                 # False variable
+PROCID=$$               # Process ID
+DEBUG=${FALSE?}
+DB2INSTLOG="/tmp/${PROGNAME?}.log.${PROCID?}"   # DB2 log file
+NODISPLAY=${FALSE?}
+USERIFILE="/tmp/${PROGNAME?}.user.${PROCID?}"   # keep info about a userid
+MSGCOUNT=0              # Message count
+
+TMPFILE1=""
+TMPFILE2=""
+TMPFILE3=""
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+
+# Include common definition file
+if [ -f ${PROGDIR?}/db2iutil ]; then
+    . ${PROGDIR?}/db2iutil
+else
+    echo "File ${PROGDIR?}/db2iutil not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+get_locale         # Get the locale name of set message catalog path
+
+#######################################################################################
+# Function Definitions
+#######################################################################################
+
+update_adm_perms ()
+{
+    trac update_adm_perms $@
+    set ${setopts?}
+    chk_root           # Check that only root is running this program
+    assignDefaultPermOwn
+
+    if [ ${INSTTYPE?} -eq 4 ]; then
+        # for CLIENT instance, remove all non-client files
+        file_list=""
+        
+        file_list=${file_list?}" cielock db2castart db2castop db2chparm db2dart "
+        
+        file_list=${file_list?}" db2dasstml db2fmp db2fmp32 db2fmpr db2fmpr32 "
+        
+        file_list=${file_list?}" db2fmpterm db2genp db2gov db2govd db2govlg "
+        
+        file_list=${file_list?}" db2havend db2ida db2inidb db2licd db2linkspeed "
+        
+        file_list=${file_list?}" db2path db2pd db2pdcfg db2rapp db2rappl "
+        
+        file_list=${file_list?}" db2rem db2remot db2rfpen db2rocm db2rocmc "
+        
+        file_list=${file_list?}" db2rocme db2rstar db2rstop db2star2 db2start "
+        
+        file_list=${file_list?}" db2stop db2stop2 db2stst db2sysc db2syscr "
+        
+        file_list=${file_list?}" runr.sh "
+        
+        for file_name in ${file_list?}; do
+            rm -f ${SQLLIB?}/adm/${file_name?}
+        done
+    fi 
+    
+    if [ -f ${SQLLIB?}/adm/db2audit ];
+    then
+            mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2audit
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2cacpy ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2cacpy
+        mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2cacpy
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2cap ];
+    then
+            mkpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2cap
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2castart ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2castart
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2castart
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2castop ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2castop
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2castop
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2chparm ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2chparm
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2chparm
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2credman ];
+    then
+            mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2credman
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2dart ];
+    then
+            mkpermission "o+rx" ${SQLLIB?}/adm/db2dart
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2dasstml ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2dasstml
+        mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2dasstml
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmp ];
+    then
+            mkpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2fmp
+        touch ${SQLLIB?}/adm/.fenced
+            chg_owngrp ${FENCEDNAME?} ${FENCEDGRP?} ${SQLLIB?}/adm/.fenced
+        mkpermission "ugo=r" ${SQLLIB?}/adm/.fenced
+            create_fencedid_file ${FENCEDNAME} ${FENCEDGRP}
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmp32 ];
+    then
+            mkpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2fmp32
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpr ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpr
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpr
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpr32 ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpr32
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpr32
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpterm ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpterm
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpterm
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2genp ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2genp
+        mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2genp
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2gov ];
+    then
+            mkpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2gov
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2govd ];
+    then
+            mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2govd
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2govlg ];
+    then
+            mkpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2govlg
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2havend ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2havend
+        mkpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2havend
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2iclean ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2iclean
+        mkpermission "u=rxs,g=rx" ${SQLLIB?}/adm/db2iclean
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2licd ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2licd
+        mkpermission "u=rxs,g=rx,o=rx" ${SQLLIB?}/adm/db2licd
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2licm ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2licm
+        mkpermission "u=rxs,g=rx" ${SQLLIB?}/adm/db2licm
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2linkspeed ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2linkspeed
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2linkspeed
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2path ];
+    then
+            mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2path
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2pd ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2pd
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2pd
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2pdcfg ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2pdcfg
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2pdcfg
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rapp ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2rapp
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rappl ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2rappl
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rem ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2rem
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2remot ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2remot
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2remot
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocm ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocm
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2rocm
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocmc ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocmc
+        mkpermission "ug=rsx" ${SQLLIB?}/adm/db2rocmc
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocme ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocme
+        mkpermission "ug=rsx" ${SQLLIB?}/adm/db2rocme
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rstar ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2rstar
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rstop ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2rstop
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2set ];
+    then
+            mkpermission "ugo=rx" ${SQLLIB?}/adm/db2set
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2star2 ];
+    then
+            mkpermission "o+rx" ${SQLLIB?}/adm/db2star2
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2start ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2start
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2start
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stop ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2stop
+        mkpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2stop
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stop2 ];
+    then
+            mkpermission "o+rx" ${SQLLIB?}/adm/db2stop2
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stst ];
+    then
+            mkpermission "o+rx" ${SQLLIB?}/adm/db2stst
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2sysc ];
+    then
+            mkpermission "ug=rx" ${SQLLIB?}/adm/db2sysc
+        ln -sf ../cfg/ITLMready.properties ${SQLLIB?}/adm/ITLMready.properties
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2syscr ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2syscr
+        mkpermission "ug=rxs" ${SQLLIB?}/adm/db2syscr
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2trc ];
+    then
+            mkpermission "o+rx" ${SQLLIB?}/adm/db2trc
+    fi
+
+    if [ -f ${SQLLIB?}/adm/runr.sh ];
+    then
+        chg_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/runr.sh
+        mkpermission "ugo=rx" ${SQLLIB?}/adm/runr.sh
+    fi
+
+    trax update_adm_perms
+}
+
+assignDefaultPermOwn ()
+{
+    trac assignDefaultPermOwn $@
+    set ${setopts?}
+    # defaults for all files in 'adm'
+    chg_owngrp ${INSTNAME?} ${INSTGRP?} ${SQLLIB?}/adm
+    chg_owngrp ${INSTNAME?} ${INSTGRP?} ${SQLLIB?}/adm/*
+    mkpermission "ug=rxs,o=" ${SQLLIB?}/adm/*
+
+    if [ -f ${SQLLIB?}/adm/db2licm ]; then
+        chg_owngrp    root ${INSTGRP?} ${SQLLIB?}/adm/db2licm
+        mkpermission "u=rxs,g=rx"      ${SQLLIB?}/adm/db2licm
+    fi
+    trax assignDefaultPermOwn
+}
+
+check_adm_perms ()
+{
+    trac check_adm_perms $@
+    set ${setopts?}
+    check_rc=${TRUE?}
+
+    if [ -f ${SQLLIB?}/adm/db2audit ];
+    then
+           ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2audit
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2audit: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2cacpy ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2cacpy
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2cacpy: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2cacpy
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2cacpy: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2cap ];
+    then
+           ckpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2cap
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2cap: expected permissions: ug=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2castart ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2castart
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2castart: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2castart
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2castart: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2castop ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2castop
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2castop: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2castop
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2castop: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2chparm ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2chparm
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2chparm: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2chparm
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2chparm: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2credman ];
+    then
+           ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2credman
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2credman: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2dart ];
+    then
+           ckpermission "o+rx" ${SQLLIB?}/adm/db2dart
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2dart: expected permissions: o+rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2dasstml ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2dasstml
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2dasstml: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2dasstml
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2dasstml: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmp ];
+    then
+           ckpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2fmp
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2fmp: expected permissions: ug=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmp32 ];
+    then
+           ckpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2fmp32
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2fmp32: expected permissions: ug=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpr ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpr
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2fmpr: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpr
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2fmpr: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpr32 ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpr32
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2fmpr32: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpr32
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2fmpr32: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2fmpterm ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2fmpterm
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2fmpterm: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2fmpterm
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2fmpterm: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2genp ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2genp
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2genp: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2genp
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2genp: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2gov ];
+    then
+           ckpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2gov
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2gov: expected permissions: ug=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2govd ];
+    then
+           ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2govd
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2govd: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2govlg ];
+    then
+           ckpermission "ug=rx,o=rx" ${SQLLIB?}/adm/db2govlg
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2govlg: expected permissions: ug=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2havend ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2havend
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2havend: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,go=rx" ${SQLLIB?}/adm/db2havend
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2havend: expected permissions: u=rxs,go=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2iclean ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2iclean
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2iclean: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,g=rx" ${SQLLIB?}/adm/db2iclean
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2iclean: expected permissions: u=rxs,g=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2licd ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2licd
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2licd: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,g=rx,o=rx" ${SQLLIB?}/adm/db2licd
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2licd: expected permissions: u=rxs,g=rx,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2licm ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2licm
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2licm: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "u=rxs,g=rx" ${SQLLIB?}/adm/db2licm
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2licm: expected permissions: u=rxs,g=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2linkspeed ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2linkspeed
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2linkspeed: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2linkspeed
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2linkspeed: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2path ];
+    then
+           ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2path
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2path: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2pd ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2pd
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2pd: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2pd
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2pd: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2pdcfg ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2pdcfg
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2pdcfg: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2pdcfg
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2pdcfg: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rapp ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2rapp
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rapp: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rappl ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2rappl
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rappl: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rem ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2rem
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rem: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2remot ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2remot
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2remot: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2remot
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2remot: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocm ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocm
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2rocm: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2rocm
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rocm: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocmc ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocmc
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2rocmc: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rsx" ${SQLLIB?}/adm/db2rocmc
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rocmc: expected permissions: ug=rsx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rocme ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2rocme
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2rocme: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rsx" ${SQLLIB?}/adm/db2rocme
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rocme: expected permissions: ug=rsx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rstar ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2rstar
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rstar: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2rstop ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2rstop
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2rstop: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2set ];
+    then
+           ckpermission "ugo=rx" ${SQLLIB?}/adm/db2set
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2set: expected permissions: ugo=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2star2 ];
+    then
+           ckpermission "o+rx" ${SQLLIB?}/adm/db2star2
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2star2: expected permissions: o+rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2start ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2start
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2start: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2start
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2start: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stop ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2stop
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2stop: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs,o=rx" ${SQLLIB?}/adm/db2stop
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2stop: expected permissions: ug=rxs,o=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stop2 ];
+    then
+           ckpermission "o+rx" ${SQLLIB?}/adm/db2stop2
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2stop2: expected permissions: o+rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2stst ];
+    then
+           ckpermission "o+rx" ${SQLLIB?}/adm/db2stst
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2stst: expected permissions: o+rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2sysc ];
+    then
+           ckpermission "ug=rx" ${SQLLIB?}/adm/db2sysc
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2sysc: expected permissions: ug=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2syscr ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/db2syscr
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file db2syscr: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ug=rxs" ${SQLLIB?}/adm/db2syscr
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2syscr: expected permissions: ug=rxs >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/db2trc ];
+    then
+           ckpermission "o+rx" ${SQLLIB?}/adm/db2trc
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file db2trc: expected permissions: o+rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    if [ -f ${SQLLIB?}/adm/runr.sh ];
+    then
+        chk_owngrp root ${INSTGRP?} ${SQLLIB?}/adm/runr.sh
+        if [ $? -eq ${FALSE?} ]; then
+            check_rc=${FALSE?}
+            echo file runr.sh: expected owner/group: root/${INSTGRP?} >> ${OUTPUTFILE?}
+        fi
+       ckpermission "ugo=rx" ${SQLLIB?}/adm/runr.sh
+       if [ $? -eq ${FALSE?} ]; then
+           check_rc=${FALSE?}
+           echo file runr.sh: expected permissions: ugo=rx >> ${OUTPUTFILE?}
+       fi
+    fi
+
+    trax check_adm_perms
+    return ${check_rc?}
+}
+
+check_instdir_perms()
+{
+   trac check_instdir_perms $@
+   set ${setopts?}
+
+   expected_permissions="u=rwx,g=rwxs,o=rxt"
+   
+   ckpermission "${expected_permissions?}" ${SQLLIB?}
+   check_rc=$?
+
+   if [ ${check_rc?} -ne ${TRUE?} ]; then
+      echo ${SQLLIB?} : expected permissions:${expected_permissions?} >> ${OUTPUTFILE?}
+   fi
+
+   trax check_instdir_perms
+   return ${check_rc?}
+
+}
+##################################################################################
+# Real work starts from here...
+##################################################################################
+
+if [ $# -gt 7 ]
+then
+    SQLLIB=$1
+    INSTNAME=$2
+    INSTGRP=$3
+    FENCEDNAME=$4
+    FENCEDGRP=$5
+    INSTTYPE=$6
+    type=$7
+    setopts=$8
+    OUTPUTFILE=${9:-/tmp/permDiff.$$}
+    if [ ${setopts?} = "-x" ]; then
+        DEBUG=0
+    fi
+    if [ "X${type?}" = "Xset" ]; then
+        update_adm_perms
+    elif [ "X${type?}" = "Xcheck" ]; then
+        check_instdir_perms
+        prog_rc=$?
+        if [ ${prog_rc?} -eq ${TRUE?} ]; then
+           check_adm_perms
+           prog_rc=$?
+        fi
+
+        exit ${prog_rc?}
+    fi
+else
+    echo "Invalid number of parameters passed (must be > 8): $@"
+    echo "Exiting 'db2iuadm'..."
+    exit 1
+fi
+
+# End of Program
+

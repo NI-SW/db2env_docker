@@ -1,0 +1,16 @@
+.metadata/JAVA_SUPPORT/files:
+.metadata/JAVA_SUPPORT/prereqs:12
+.metadata/JAVA_SUPPORT/spec:406
+bin/db2jdbcbind:634
+bin/profdb:612
+java/db2java.zip:1183882
+java/db2jcc4.jar:6550443
+java/db2jcc_license_cu.jar:1529
+lib32/libdb2jcct2.so:132557
+lib32/libdb2jcct2.so.1:132557
+lib32/libdb2jdbc.so:164711
+lib32/libdb2jdbc.so.1:164711
+lib64/libdb2jcct2.so:135600
+lib64/libdb2jcct2.so.1:135600
+lib64/libdb2jdbc.so:177704
+lib64/libdb2jdbc.so.1:177704

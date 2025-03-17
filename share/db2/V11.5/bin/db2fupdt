@@ -1,0 +1,261 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2fupdt
+#
+# FUNCTION: db2fupdt - Update parameter=value style file
+#
+# USAGE: db2fupdt [-h|-?] [-d] 
+#                 -f FileName -p Parameter 
+#                 [-v Value] [-s Section]
+#                 [-q]
+#
+#          -h|-?       display the usage information.
+#          -d          turn debug mode on.
+#          FileName    file to modify
+#          Parameter   Parameter to modify (lhs of equal sign)
+#          Value       New value to assign (if missing, will print to
+#                      stdout the old value)
+#          Section     Section to look for the parameter in, if the file
+#                      has sections delimited as [Section].  If the file
+#                      has no sections, -s parameter is not required.
+#          -q          Quiet: no output.  Meaningless if -v is also
+#                      specified (-v has no output).
+#
+# RETURN CODES:
+#
+#          If -v is specified:
+#             0        Success
+#             non-zero Error updating file
+#
+#          If -v is not specified:
+#             0        Parameter found (in given section)
+#             non-zero Parameter not found (in given section)
+#          -q has no effect on return code
+#
+########################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+TMPFILE="/tmp/db2fupdt.tmp.$$"    # Temporary file
+
+syntax()
+{
+  echo "Not documented. (See script source)"
+  exit 1
+}
+
+defaultopts()
+{
+  DEBUG=1
+  VALUESET=1
+  SECTIONSET=1
+  QUIET=1
+  setopts="+x"
+}
+
+#--------------------------------------------------------------------
+#                    Main Program
+#--------------------------------------------------------------------
+
+defaultopts
+
+# Process command-line options
+case $# in
+  0)
+    syntax 
+    ;;
+  *)
+    while getopts :dqf:p:v:s: optchar
+    do
+      case ${optchar?} in
+        d)
+          DEBUG=0
+          setopts="-x"
+          ;;
+        f)
+          FILE="${OPTARG?}"
+          ;;
+        p)
+          PARAMETER="${OPTARG?}"
+          ;;
+        v)
+          VALUE="${OPTARG?}"
+          VALUESET=0
+          ;;
+        s)
+          SECTION="${OPTARG?}"
+          SECTIONSET=0
+          ;;
+        q)
+          QUIET=0
+          ;;
+        *) # h or ?(error)
+          syntax
+          ;;
+      esac
+    done
+    ;;
+esac
+
+# Both the -f and -p must be set.
+if [ "X${FILE}" = "X" -o "X${PARAMETER}" = "X" ]
+then
+  syntax
+fi
+
+# if the file doesn't exist...
+if [ ! -f ${FILE?} ]
+then
+  # and we're setting a value, touch it (create it)
+  if [ ${VALUESET?} -eq 0 ]
+  then
+    touch ${FILE?}
+  else
+  # otherwise, return immediately (the value is not set, and no output)
+    exit 1
+  fi
+fi
+
+set ${setopts?}
+
+# AWK variables:
+#   found -> has the parameter been found?
+#   section -> are we in the right section?
+#              If -s wasn't specified, we're always in the right section.
+#   sectionfound -> was the section found?
+
+# always start as not foudn.
+AWKSCRIPT="BEGIN{ found=0;"
+if [ ${SECTIONSET?} -eq 0 ]
+then
+  # looking for a section.
+  # A section looks like [.*].
+  # if this is a section, find out if it's the *right* section.  If so,
+  # save this fact.
+  AWKSCRIPT="${AWKSCRIPT?} section=0; sectionfound=0; }
+/^\[.*\]/{
+  if (\$1 == \"[${SECTION?}]\") {
+    section = 1;
+    sectionfound = 1;
+  } else {
+"
+  # if there is a value to set, and we're leaving the right section,
+  # put the parameter and value into the section now before we leave it.
+  if [ ${VALUESET?} -eq 0 ]
+  then
+    AWKSCRIPT="${AWKSCRIPT?} 
+    if ( found == 0 && section == 1 ) {
+      print \"${PARAMETER?}=${VALUE?}\"
+    }"
+  fi
+
+  # since this was not the right section, set that we've left it.
+    AWKSCRIPT="${AWKSCRIPT?}
+    section = 0;
+  }
+}"
+else
+  # if no section specified, we're always in the right section.
+  AWKSCRIPT="${AWKSCRIPT?} section=1; sectionfound=1; }"
+fi
+
+# if we've found the parameter, which is left-aligned, ending with an equals
+# sign, check if we're in the right section.
+AWKSCRIPT="${AWKSCRIPT?}
+/^${PARAMETER?}=/{ 
+  if ( section == 1 ) {"
+if [ ${VALUESET?} -eq 0 ]
+then
+  # If we're to reset the value, change it here.
+  AWKSCRIPT="${AWKSCRIPT?}
+    sub(\"=.*\$\",\"=${VALUE?}\"); "
+else
+  # Otherwise, remove the front, and print it out.
+  AWKSCRIPT="${AWKSCRIPT?}
+    sub(\"^.*=\",\"\"); 
+    print \$0;"
+fi
+# However, either way, we found what we're looking for.
+AWKSCRIPT="${AWKSCRIPT?} 
+    found = 1 
+  }
+}"
+
+if [ ${VALUESET?} -eq 0 ]
+then
+  # if we're changing the value, we need to print out every line so we
+  # can put it back in the original file.
+  AWKSCRIPT="${AWKSCRIPT?}
+{ print \$0 }"
+fi
+
+if [ ${VALUESET?} -eq 0 ]
+then
+  # If we're changing a value, the parameter may not actually exist.
+  # We'll have to create it.
+  AWKSCRIPT="${AWKSCRIPT?}
+END{"
+
+  # If the section didn't even exist, we have to create the section, too.
+  if [ ${SECTIONSET?} -eq 0 ]
+  then
+    AWKSCRIPT="${AWKSCRIPT?}
+  if ( sectionfound == 0 ) {
+    print \"[${SECTION?}]\""
+  else
+    AWKSCRIPT="${AWKSCRIPT?}
+  if ( found == 0 ) {"
+  fi
+
+  AWKSCRIPT="${AWKSCRIPT?}
+    print \"${PARAMETER?}=${VALUE?}\"
+  }
+}
+"
+fi
+
+rm -f ${TMPFILE?}
+awk "${AWKSCRIPT?}" ${FILE?} > ${TMPFILE?}
+
+if [ ${VALUESET?} -ne 0 ]
+then
+  # if we merely are returning the value, display it.
+  if [ ${QUIET?} -ne 0 ]
+  then
+    cat ${TMPFILE?}
+  fi
+
+  # return value is true if we found a value, false otherwise.
+  LINES=`wc -l < ${TMPFILE?}`
+  exitcode=1
+  if [ ${LINES?} -ne 0 ]
+  then
+    exitcode=0
+  fi
+else
+  # Otherwise, place it back over the original file.
+
+  # make sure we keep its owner/group settings!
+  cat /dev/null > ${FILE?} && cat ${TMPFILE?} >> ${FILE?}
+  exitcode=$?
+fi
+# error or not, clean up temp file
+rm -f ${TMPFILE?} > /dev/null 2>&1
+
+exit ${exitcode?}
+

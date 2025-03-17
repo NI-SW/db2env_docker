@@ -1,0 +1,228 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2updtnetmon
+#
+# FUNCTION: db2updtnetmon - Update the netmon.cf file with a !REQD entry
+#
+#                  Return - 0 on succesfully added an entry or
+#                           the entry to be added already exists in the file
+#                         - 1 if retrieve the IP failed from db2getgateway
+#                               or update the netmon.cf file fails
+#                         - 2 if db2getgateway has failed  //w911235my 
+#
+########################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+TRUE=0                     # True variable
+FALSE=1                    # False variable
+export TRUE FALSE
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+
+PROGNAME=`basename $0`       # Program name
+
+# To display the command syntax
+syntax ()
+{
+    echo "db2updtnetmon "
+}
+
+# Default initialization for command execution
+initialization ()
+{
+    set ${setopts?}
+
+    DB2UPDTNETMON="${PROGDIR?}/db2updtnetmon"
+    db2updtnetmon_rc=0
+
+    DB2GETGATEWAYS="${PROGDIR?}/db2gateways"
+
+    getgateways_rc=0
+    DB2GETNETWORKS=${PROGDIR?}/db2getnetwork
+    getnetworks_rc=0
+    NETMON_FILE="/var/ct/cfg/netmon.cf"
+    LOGFILE="/tmp/db2updatenetmon.log"
+    validate_netmon_rc=0
+
+    HOSTNAME=""   # this host name should map to the 2nd column in db2nodes.cfg file to decide which line(s) in db2nodes.cfg is for this host, so it can be used to get all the netnames as well.
+    INSTNAME=""
+    INSTHOME=""
+    NODESCFGFILE=""
+    NETWORKLIST=""
+    NETNAMELIST=""
+    MISSING_LIST=""
+}
+
+# Install the DB2 HA Scripts
+update_netmon ()
+{
+    set ${setopts?}
+    db2updtnetmon_rc=${TRUE?}
+    getgateways_rc=${TRUE?}
+    getgateways_output=""
+
+    if [ -f ${LOGFILE?} ]; then
+        rm ${LOGFILE?}
+    fi
+
+    if [ -f ${DB2GETGATEWAYS?} ]; then
+
+        getgateways_output=`${DB2GETGATEWAYS?} -get`
+
+        getgateways_rc=$?
+        if [ ${TRUE?} -eq ${getgateways_rc?} ]; then
+           echo "${getgateways_output?}"| while read entry; do 
+                g_rc=0
+                grep "${entry?}" ${NETMON_FILE?} 1>>${LOGFILE?} 2>>${LOGFILE?}
+                g_rc=$?
+                echo "g_rc is ${g_rc?}" >> ${LOGFILE?}
+                if [ ${g_rc?} -ne ${TRUE?} ]; then
+                    a_rc=0
+                    echo "${entry?}" >> ${NETMON_FILE?}
+                    a_rc=$?
+                    if [ ${a_rc?} -ne ${TRUE?} ]; then
+                        db2updtnetmon_rc=${a_rc?}
+                    fi
+                fi
+            done
+        else
+            db2updtnetmon_rc=2
+        fi
+    fi
+
+}
+
+# find out all networks from the db2getnetwork output
+find_networks()
+{
+    db2getnetworks_rc=0
+    
+    echo "find_networks start" >> ${LOGFILE?}
+    NETWORKLIST=`${DB2GETNETWORKS?}`
+    db2getnetworks_rc=$?
+    echo "find_networks end, return code is ${db2getnetworks_rc?}; NETWORKLIST=${NETWORKLIST?}. " >> ${LOGFILE?}
+    return ${db2getnetworks_rc?}
+}
+# find out all hostname/netname for the current host in db2nodes.cfg file
+find_netnames()
+{
+    echo "find_netnames start ...." >> ${LOGFILE?}
+    LIST=""
+    INSTHOME=`${PROGDIR?}/../../../bin/db2usrinf -d ${INSTNAME?}`
+    NODESCFGFILE=${INSTHOME?}/sqllib/db2nodes.cfg
+
+    if [ -f ${NODESCFGFILE?} ]; then
+        LIST=`cat  ${NODESCFGFILE?} | awk '{if($2==HOSTNAME) {print $2,$4}}' HOSTNAME="${HOSTNAME?}"`
+        echo "LIST=${LIST?}" >> ${LOGFILE?}
+
+        NETNAMELIST=`echo ${LIST?} | sed 's/,/ /g' `
+        echo "NETNAMELIST=${NETNAMELIST?}" >> ${LOGFILE?}
+#   wsdbu01227983myk, after this fix, db2updtnetmon will called before nodes.cfg is created. So in that case only hostname adapter validation enough. Confirmed with Kyle. 
+    fi
+#   wsdbu01260695myk, If not able to get Netname from db2nodes.cfg due to shortname/hostname issue from db2nodes.cfg use the parm passed
+    if [ "X${NETNAMELIST?}" = "X" ]; then 
+        NETNAMELIST="${HOSTNAME?}"
+        echo "NETNAMELIST=${NETNAMELIST?}" >> ${LOGFILE?}
+     
+    fi
+    
+   echo "find_netnames end .... " >> ${LOGFILE?}
+}
+# Validate netmon for current host: This function checks if all the hostname and netnames' adapter has an !REQD entry in netmond.cf file. If not return code is non-zero and the stdout prints the hostname/netname:adapterName.
+validate_netmon()
+{
+    find_networks  #fill in NETWORKLIST
+    find_netnames  #fill in NETNAMELIST
+
+    if [ "X${NETNAMELIST?}" = "X" -o "X${NETWORKLIST?}" = "X" ]; then
+        
+        MISSING_LIST="${MISSING_LIST?} ${HOSTNAME?}"
+        echo "Error NETWORKLIST=${NETWORKLIST?}; NETNAMELIST=${NETNAMELIST?};MISSING_LIST=${MISSING_LIST?}" >> ${LOGFILE?}
+
+        return ${FALSE?}
+    fi
+
+    for name in ${NETNAMELIST?}; do
+      #find the corresponding adapter name
+      adaptername=""
+      adaptername=`${DB2GETNETWORKS?} | awk '{if (($3==NAME || $3 ~ /^${NAME?}\./) && ($4 !~ /^ib/) ) {print $4}}' FS=, NAME=${name?}`
+      echo "netname=${name?}, adaptername=${adaptername?}" >> ${LOGFILE?}
+
+      for adaptname in ${adaptername?}; do
+        # if the adapter name does not start with "ib", then check if there is a line starting 
+        # with !REQD that has the adapter name. If not, print netname:adapter name to the output buffer.        
+        if [ "X${adaptname?}" != "X" ]; then
+            echo ${adaptname?}
+            #check if the !REQD entry exists for this adapter 
+            grep "\!REQD" ${NETMON_FILE?} | grep ${adaptname?} >> ${LOGFILE?}
+            if [ $? -eq ${TRUE?} ]; then
+                validate_netmon_rc=${TRUE?}
+                break
+            else
+                entry=${name?}:${adaptname?}
+                echo ${MISSING_LIST?} | egrep  " ${entry?}$|^${entry?}$| ${entry?} |^${entry?} " 1>/dev/null
+                if [ $? -ne ${TRUE?} ]; then
+                    MISSING_LIST="${MISSING_LIST?} ${name?}:${adaptname?}"
+                    validate_netmon_rc=${FALSE?}
+                fi
+            fi
+        fi
+      done
+    done
+    return ${validate_netmon_rc?}
+}
+
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+set ${setopts?}
+
+initialization # Set up environment
+
+# Process command-line options
+while getopts :i:n:l:d optchar; do
+            case ${optchar?} in
+                i) #instance name
+                    INSTNAME="${OPTARG?}"
+                    ;;
+                n) #hostname/netname
+                    HOSTNAME="${OPTARG?}"
+                    ;;
+                d)  # debug mode used for IBM Support
+                    DEBUG=${TRUE?}
+                    setopts="-x"
+                    ;;
+                l) #log file
+                    LOGFILE="${OPTARG?}"
+            esac
+done
+shift `expr $OPTIND - 1` # Delete all option args
+
+set ${setopts?}
+
+update_netmon
+
+exit ${db2updtnetmon_rc?}

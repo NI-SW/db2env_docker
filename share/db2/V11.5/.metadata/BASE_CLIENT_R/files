@@ -1,0 +1,9 @@
+.metadata/BASE_CLIENT_R/files:
+.metadata/BASE_CLIENT_R/spec:406
+adm/db2iclean:47024
+instance/db2icrt_local:10497
+instance/db2iuadm:30304
+instance/db2iupdt_local:8194
+instance/db2iupgrade_local:94835
+instance/db2ssh:6600
+instance/db2uit:6681

@@ -1,0 +1,176 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2desktop
+#
+# FUNCTION: db2desktop - called by DB2 desktop entries to source instance 
+#                         environment and call the related command
+#
+########################################################################
+
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+# Current DB2 installation directory
+
+DB2LOCAL=`echo $DB2LOCAL`
+
+if [ "X${DB2LOCAL?}" != "X" -a  -f ${DB2LOCAL?}/.mount ]; then
+   DB2DIR=${DB2LOCAL?}/instance
+   curdir=`/bin/pwd`
+else
+   curdir=`/bin/pwd`
+   DB2DIR=`dirname $0`
+   cd ${DB2DIR?}
+   DB2DIR=`/bin/pwd`
+fi
+
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+if [ ! -d ${DB2DIR?}/instance ]
+then
+    DB2DIR=`dirname ${DB2DIR?}`
+fi
+cfg_tmp="${DB2DIR?}/cfg/installcopy.cfg"
+cmd_db2fupdt_tmp="${DB2DIR?}/bin/db2fupdt"
+DB2_KEEP_IN_ORIGINAL_DB2DIR="${DB2_KEEP_IN_ORIGINAL_DB2DIR:-FALSE}"
+
+if [ -f "${cfg_tmp?}" -a -f "${cmd_db2fupdt_tmp?}"  -a "X${DB2_KEEP_IN_ORIGINAL_DB2DIR?}" != "XTRUE" ]; then
+   db2dir_tmp=`${cmd_db2fupdt_tmp?} -f ${cfg_tmp?} -p DB2DIR`
+   if [ $? -eq 0 ]; then
+      if [ -d ${db2dir_tmp?} ]; then
+         cd ${db2dir_tmp?} 2>/dev/null 1>/dev/null
+         if [ $? -eq 0 ]; then
+            DB2DIR=`echo ${db2dir_tmp?} | sed 's/\/$//'`
+         fi
+     fi
+   fi
+fi 
+cd ${curdir?}
+unset curdir cfg_tmp cmd_db2fupdt_tmp db2dir_tmp DB2_KEEP_IN_ORIGINAL_DB2DIR
+
+# Set the directory name where this file is located.
+curdir=`/bin/pwd`
+PROGDIR=`dirname $0`
+cd ${PROGDIR?}
+PROGDIR=`/bin/pwd`
+cd ${curdir?}
+
+PROGNAME=`basename $0`       # Program name
+PROGARGS="$*"
+
+# Include common definition file
+if [ -f ${PROGDIR?}/../instance/db2iutil ]; then
+    . ${PROGDIR?}/../instance/db2iutil
+else
+    echo "File ${PROGDIR?}/../instance/db2iutil not found."
+    echo "Exiting..."
+    exit 1
+fi
+
+#-----------------------------------------------------------------------#
+#               Start of function definitions
+#-----------------------------------------------------------------------#
+# To display the help menu
+syntax()
+{
+    echo 'Usage: %s [-h|-?] [-i <instance_name>] [other arguments]' \
+        ${PROGNAME?}
+    exit 1
+}
+
+# Default initialization for command execution
+initialization ()
+{
+    set ${setopts?}
+
+    DEBUG=${FALSE?}
+    INSTNAME_ICON=`${DB2DIR?}/bin/db2usrinf -n -E`
+    INSTHOME_ICON=`${DB2DIR?}/bin/db2usrinf -d ${INSTNAME_ICON?}`
+    INDEX_ICON_DIR=${INSTHOME_ICON?}/.ibm/db2/desktop
+    INDEX_INSTANCE_FILE=${INSTHOME_ICON?}/.ibm/db2/desktop/env
+    CMD_DB2FUPDT=${DB2DIR?}/bin/db2fupdt
+    ICON_INSTANCE=
+    JAVA_BIT=64
+    if [ -z "$JAVA_HOME" ]; then
+       if [ -d "${DB2DIR?}/java/jdk${JAVA_BIT?}/jre/bin" ]; then
+          JAVA_HOME="${DB2DIR?}/java/jdk${JAVA_BIT?}"
+          export JAVA_HOME
+       fi
+    fi
+}
+
+source_instance_env()
+{
+    set ${setopts?}
+    if [ -z ${ICON_INSTANCE?} ]; then
+       ICON_INSTANCE=`${CMD_DB2FUPDT?} -f ${INDEX_INSTANCE_FILE?} -p DB2INSTANCE`
+       if [ $? -ne ${TRUE?} ]; then
+          if [ -n ${DB2INSTANCE} ]; then
+             ICON_INSTANCE=${DB2INSTANCE}
+          else
+             exit 1
+          fi
+       fi 
+    fi
+    ICON_INSTANCE_HOME=`${DB2DIR?}/bin/db2usrinf -d ${ICON_INSTANCE?}`
+    if [ $? -ne ${TRUE?} ]; then
+          exit 1
+    fi 
+    if [ -e "${ICON_INSTANCE_HOME?}/sqllib/db2profile" ]; then
+          . ${ICON_INSTANCE_HOME?}/sqllib/db2profile
+    else
+          exit 1
+    fi
+}
+
+#-----------------------------------------------------------------------#
+#                End of function definitions
+#-----------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+#                             Main program
+#-----------------------------------------------------------------------#
+
+set ${setopts?}
+
+initialization # Set up environment for DB2 Installer
+
+# Process command-line options
+case $# in
+    *)
+       while getopts :i:hd optchar; do
+            case ${optchar?} in
+                i)  # specified instance name
+                    ICON_INSTANCE=${OPTARG?}
+                    ;;
+                d)  # debug mode used for IBM Support
+                    DEBUG=${TRUE?}
+                    setopts="-x"
+                    ;;
+                h|?)
+                    syntax
+                    ;;
+            esac
+       done
+       shift `expr $OPTIND - 1` # Detele all option args
+       ;;
+esac
+set ${setopts?}
+
+source_instance_env
+exec "$@"
+

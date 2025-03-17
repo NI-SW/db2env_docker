@@ -1,0 +1,69 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2_run_as
+#
+# FUNCTION: Run a program that is 32- or 64-bit in an instance environment
+#           that may not match the program.
+#
+#############################################################################
+# Options for "set" command
+setopts="${setopts:-+x}"
+set ${setopts?}
+
+PROGNAME=`basename $0`
+
+syntax ()
+{
+   echo "Usage: ${PROGNAME?} 32|64 command parameters"
+   exit 1
+}
+if [ $# -lt 2 ]; then
+    syntax
+fi
+
+LibBit=$1
+shift
+RunCmd="$@"
+
+InstName=${DB2INSTANCE:-""}
+
+if [ "X${InstName?}" = "X" ]; then
+   echo "${PROGNAME?}: Instance environment not set up - please run db2profile or db2cshrc"
+   exit 1
+fi
+
+InstHome=`db2usrinf -d ${InstName?}`
+if [ $? -ne 0 ]; then
+   echo "${PROGNAME?}: ${InstName?} is not a valid user name!"
+   exit 1
+fi
+
+if [ "X${LibBit?}" != "X32" -a "X${LibBit?}" != "X64" ]; then
+   syntax
+fi
+
+LibBitPath="${InstHome?}/sqllib/lib${LibBit?}"
+
+if [ -d "${LibBitPath?}" ]; then
+
+    LD_LIBRARY_PATH="${LibBitPath?}:${LD_LIBRARY_PATH?}"
+    export LD_LIBRARY_PATH
+    LIBPATH="${LibBitPath?}:${LIBPATH?}"
+    export LIBPATH
+
+fi
+exec ${RunCmd?}
+

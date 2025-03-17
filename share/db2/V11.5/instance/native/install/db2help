@@ -1,0 +1,386 @@
+#!/bin/sh -p
+#-----------------------------------------------------------------------
+# (C) COPYRIGHT International Business Machines Corp. 1997, 2006
+# All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+# NAME: db2help
+# ARGS: -b <browser>: The browser program to call to browse the HTML file.
+#       -h: Displays usage message.
+#       search: display the search page for DB2 in a web browser. <deprecated>
+#       -u <URL>: display the URL represented by <URL> in a web browser.
+#
+# FUNCTION: db2help attempts to determine the default web browser and
+#           launch it to display HTML information about DB2.
+#
+# db2help is supplied as-is as an example of how to perform this function.
+# There is no warranty or support.
+#-----------------------------------------------------------------------
+
+# Name of function: help
+# Result: usage message
+help ()
+{
+    ${CMD_ECHO?} "Usage: db2help [ [-h] | [-b <browser>] [search | -u <URL>] ]"
+    exit 0
+}
+# END
+
+init_vars ()
+{
+   #The host name for the DB2 Information Center
+   publib="pic.dhe.ibm.com/infocenter/db2luw/v10r5"
+   #The URL for the DB2 Information Center
+   publibHost="http://$publib/index.jsp"
+   #The vresion of DOCE we are looking for in this particylar release.
+   doceVersion="10.5.0.0" 
+   #The URL for the current release of DOCE that is installed on the 
+   #same machine as the server.
+   doceHost=""
+   #The URL that is registered with this particular copy of DB2.
+   db2DocHost=""
+   #Set this value to something other than zero if you do not 
+   #wish to launch a browser.
+   ignoreBrowser=0
+
+}
+# Name of function: commands
+# Result: system commands values
+commands ()
+{
+    # Define the main bin directory
+    BINDIR="/usr/bin"
+
+    CMD_ECHO="${BINDIR?}/echo"
+    CMD_WHICH="${BINDIR?}/which"
+
+    # Define those commands which are not found at the usual location (as above)
+    case ${OSN?} in
+        ${OSAIX?})
+            CMD_DSPMSG="${BINDIR?}/dspmsg"
+            ;;
+        ${OSLINUX?})
+            CMD_ECHO="echo"
+            ;;
+    esac
+}
+#END
+
+# Name of function: get_locale
+# Result: set locale environment variable and check the message catalog
+get_locale ()
+{
+    case ${PRODUCT?} in
+        ${DB2AIX?})
+            LINK="-L" ;;                  # Option to see if a file is a link
+        ${DB2HP?})
+            LINK="-h" ;;
+        ${DB2SUN?})
+            LINK="-h" ;;
+        ${DB2LINUX?})
+            LINK="-h" ;;
+        *)
+            ${CMD_ECHO?} "Unknown product - ${PRODUCT?}"
+            exit 1 ;;
+    esac
+
+    # Default locale name and locale-specific message directory
+    DFLTLOC="C"		# Default locale name
+    #DFLTENLOC="en_US"   # English locale name
+    #DFLTENLOC="en_US.iso88591"
+    DFLTENLOC=`${INSTDIR?}/bin/db2langdir en_US`   # English locale name
+    locname=${LANG:-${DFLTENLOC?}} #Selects system locale, or defaults to en_US
+    LOCALEDIR=${DB2DIR?}/msg/${locname?}
+     
+   
+    if [ -f ${LOCALEDIR?}/${DB2CATNAME?} ]; then
+        # use locale-specific catalog
+        loc=${locname?}
+        DB2CAT="${LOCALEDIR?}/${DB2CATNAME?}"
+    elif [ -f ${DB2DIR?}/msg/${DFLTLOC?}/${DB2CATNAME?} ]; then
+        # use default locale catalog
+        loc=${DFLTLOC?}
+        DB2CAT="${DB2DIR?}/msg/${DFLTLOC?}/${DB2CATNAME?}"
+    elif [ -f ${DB2DIR?}/msg/${DFLTENLOC?}/${DB2CATNAME?} ]; then
+        # use English locale catalog
+        loc=${DFLTENLOC?}
+        DB2CAT="${DB2DIR?}/msg/${DFLTENLOC?}/${DB2CATNAME?}"
+    # Don't mind if message catalog is missing.  Still need to set
+    # the variables so the script doesn't stop later.
+    else
+	locname=${DFLTENLOC?}
+        loc=${DFLTENLOC?}
+        DB2CAT="${DB2DIR?}/msg/${DFLTENLOC?}/${DB2CATNAME?}"
+    fi
+
+    # Set LANG and NLSPATH variables for use by $DISPMSG command
+    NLSPATH="${DB2DIR?}/msg/%L/%N:${DB2DIR?}/msg/C/%N"
+    #LANG="${loc?}"
+    #export LANG NLSPATH
+    export NLSPATH
+}
+#END
+
+# Name of function: display_msg
+# Result: displays a message from the message catalog
+# Parameters - $1 - name of the message catalog
+#            - $2 - message number
+#            - $3 - default message string
+#            - $4,$5,$6...arguments to substitute in msg string, if needed
+display_msg ()
+{
+    unset catname msgid deftmsg msgstr
+    catname="$1"
+    msgid=$2
+    deftmsg="$3"
+    
+    case ${PRODUCT?} in
+        ${DB2AIX?}})
+            shift ; shift ; shift
+            ${CMD_DSPMSG?} ${catname?} ${msgid?} "${deftmsg?}" $@ 2>&1 ;;
+        ${DB2HP?} | ${DB2SUN?} | ${DB2LINUX?})
+            shift ; shift ; shift 
+            ${DISPMSG}  1  ${msgid?} ${catname?} \ "${deftmsg?}" "$@" 2>&1 ;;
+    esac
+    
+}
+#END
+
+# Name of function: launchBrowser
+# Result: launch the web browser to display HTML content
+launchBrowser ()
+{
+    # echo "Launching browser"
+    if [  -z "$theURL" -a -z "$theSite" ]
+    	then
+        display_msg ${DB2CAT?} 95  \ 
+            "DBI1095W The file or directory %s was not found." "${theSite?}"
+        return $?
+    elif [ -n "$theURL" ]                   # If URL provided, launch as first choice
+    	then
+       # ${CMD_ECHO?} "$theBrowser $theURL"
+        $theBrowser $theURL &
+        return $?
+    else
+        theSite="http://$theSite"           # Launch help site
+        ${CMD_ECHO?} "$theBrowser $theSite"
+        $theBrowser $theSite &
+        return $?
+    fi
+}
+#END
+
+# Name of the function: get_host
+# Result: The URL for the version of DOCE that is installed locally on the machine.
+#         Only if the version of DOCE needs is the same version as the DB2 Server.
+get_host ()
+{
+       
+    doceInstall=`${DB2DIR?}/bin/db2greg -getservrec service=DOCE,version=${doceVersion?} |grep InstallPath | awk -F"=" '{print $2}' `  
+    doceInstall=`echo "$doceInstall" | sed s#\|## |sed s#\|##`
+
+    if [ $doceInstall ]
+    then
+      docePort=`cat ${doceInstall?}/cfg/db2ic.conf | grep DB2_ECLIPSEIC_PORT | awk -F"=" '{print $2}'`
+    fi
+   
+#     ${CMD_ECHO} "$doceInstall" 
+#    ${CMD_ECHO} "$docePort" 
+
+    if [ $docePort ];then
+	doceHost="http://localhost:$docePort/help/index.jsp"
+    fi
+    
+}
+#END
+
+return_URLs ()
+{
+
+#       ${CMD_ECHO} $db2DocHost
+#       ${CMD_ECHO} $doceHost
+#       ${CMD_ECHO} $publibHost
+
+        ${CMD_ECHO} "$publibHost,$doceHost,$db2DocHost"	
+}
+
+#END
+
+# --- Main code ---
+
+# Operating system elements
+OSN=`uname | awk '{print $1}' `      # Operating system name
+OSV=`uname -v | awk '{print $1}' `   # OS version number
+OSR=`uname -r | awk '{print $1}' `   # OS release number
+#echo ${OSN} ${OSV} ${OSR}
+
+# Product name for DB2 V8 product on every UNIX platform
+DB2AIX="db2_v105"        # DB2 V10.5 for AIX
+DB2SUN="db2sun_v105"     # DB2 V10.5 for Solaris
+DB2HP="db2hp_v105"       # DB2 V10.5 for HP-UX
+DB2LINUX="db2linux_v105" # DB2 V10.5 for Linux
+
+# Variables for operating system name (no dash "-" in OS name)
+OSAIX="AIX" ; OSHP="HPUX" ; OSSUN="SunOS" ; OSLINUX="Linux"
+
+# Redefine variable OSN, if needed
+case ${OSN?} in
+    "HP-UX")
+        OSN="HPUX" ;;
+esac
+
+
+# Define some OS-specific variables
+case ${OSN?} in
+    ${OSAIX?})
+        PRODUCT=${PRODUCT:-"${DB2AIX?}"}     # Product name
+        curdir="/usr/bin/pwd -P"
+        PROGDIR=`dirname $0`
+
+	      #DB2DIR="/usr/opt/db2_10_05"
+        ;;
+    ${OSHP?})
+        PRODUCT=${PRODUCT:-"${DB2HP?}"}
+        curdir="/usr/pwd -P"
+        PROGDIR=`dirname $0`
+
+	      #DB2DIR="/opt/IBM/db2/V10.5"
+        ;;
+    ${OSSUN?})
+        PRODUCT=${PRODUCT:-"${DB2SUN?}"}
+        curdir=`/usr/bin/pwd -P` 
+        PROGDIR=`dirname $0`
+        
+        ;;
+    ${OSLINUX?})
+        PRODUCT=${PRODUCT:-"${DB2LINUX?}"}
+        curdir="/bin/pwd -P"
+        PROGDIR=`dirname $0`
+         #DB2DIR="/opt/IBM/db2/V10.5"
+        ;;
+esac
+
+DB2DIR=`dirname $PROGDIR`
+INSTDIR=`cat ${DB2DIR?}/.instuse | grep DB2DIR | awk -F"=" '{print $2}'`
+DB2CATNAME="db2install.cat"                 # Name of the instance message catalog
+DISPMSG=${INSTDIR?}/instance/disp_msg        # Full path for disp_msg command
+init_vars
+commands
+get_locale
+
+# If user passed in the name of the browser following the -b flag, use that browser.
+while getopts :hob:u: optchar; do
+    case ${optchar?} in
+    b)  # Specify browser name
+        theBrowser="$OPTARG"
+    ;;
+    h)  # Display help
+        help
+    ;;
+    o)  # Get DOCE information.
+        get_host
+        ignoreBrowser=1
+    ;;
+    u)  # Specify URL to pass to browser as first argument
+        theURL="$OPTARG"
+    ;;
+    esac
+done
+
+shift `expr $OPTIND - 1` # Delete all option args
+
+# If user has already registered a favourite browser
+# through this environment variable, use that browser.
+if [ -z "$theBrowser" -a ! -z "$BROWSER" ]
+    then
+    theBrowser="$BROWSER"
+fi
+
+# Not a comprehensive list of all browser executables, but should
+# cover the most common cases.
+browserList="firefox mozilla opera"
+for browser in $browserList
+do
+    #echo "Trying browser: $browser";
+    if [ -z "$theBrowser" ]
+    	then
+        program=`${CMD_WHICH?} $browser`
+        if [ -x "$program" ]
+        then
+            theBrowser="$program"
+        fi
+    fi
+done
+
+if [ -z "$theBrowser" ]
+    then
+   # echo $browserList
+    browsers=`${CMD_ECHO?} $browserList | tr ' ' ','  > /dev/null 2>&1`
+    display_msg ${DB2CAT?} 95 \
+       "DBI1095W The file or directory was not found." "${browsers?}"
+    exit 10
+fi
+
+theKeyword="$*"
+
+# Command invoked with no arguments:
+# try to launch browser for the list of books.
+if [ -z "$theKeyword" -o "$theKeyword" = "search" ]
+    then
+        testHost=`db2set DB2_DOCHOST | grep DBI1303W | awk '{print $1}' `
+        if [ ! "$testHost" = "DBI1303W" ]
+            then
+                theHost=`db2set DB2_DOCHOST`
+            else
+                theHost="notset"
+        fi
+        # echo ${theHost?}
+        testPort=`db2set DB2_DOCPORT | grep DBI1303W | awk '{print $1}' `
+        if [ ! "$testPort" = "DBI1303W" ]
+            then
+                thePort=`db2set DB2_DOCPORT`
+            else
+                thePort="notset"
+        fi
+        #echo $theHost
+        #echo $thePort 
+        # remove possible "http://" in host, appended back in launchBrowser
+        if [ -n "$theHost" -o "$theHost" = "notset" ];then	
+           theHost=`echo "$theHost" | sed s#http://##`
+	   # remove possible trailing '/' character
+	   theHost=`echo "$theHost" | sed s#/\\$##`       
+        fi
+        if [ "$theHost" = "notset" -o `expr "$theHost" : "pic.dhe.ibm.com"` != 0 ]
+            then
+                theSite="$publib/index.jsp"
+            else
+		if [ "$thePort" = "notset" ]
+			then
+				theSite="$theHost"
+			else
+				theSite="$theHost:$thePort/help/index.jsp"
+		fi
+	fi
+    #Do not launch the browser if it's not required.
+    if [ $ignoreBrowser -eq 0 ];then
+       launchBrowser
+       exit 0
+    else
+       if [ ! "$theHost" = "notset" -o `expr "$theHost" : "pic.dhe.ibm.com"` != 0 ]
+          then
+            if [ "$thePort" = "notset" ]
+                    then
+			db2DocHost="http://$theHost/index.jsp"
+		    else
+                        db2DocHost="http://$theHost:$thePort/help/index.jsp"
+            fi
+       fi
+       
+       return_URLs
+       exit 0
+    fi
+    
+    
+fi

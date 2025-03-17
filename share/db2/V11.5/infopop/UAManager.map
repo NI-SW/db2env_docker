@@ -1,0 +1,7 @@
+
+buildMyMap =  false
+diagnoseMyHelpErrors = false
+exactContextSensitivity = true
+useCompiledMap=true
+recoverFromUAError = true
+

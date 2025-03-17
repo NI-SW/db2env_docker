@@ -1,0 +1,85 @@
+#!/bin/sh
+#############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# "Restricted Materials of IBM" 
+#
+# (C) COPYRIGHT IBM Corp. 1993, 2019 All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+#############################################################################
+
+#
+# NAME: db2dbmchk
+#
+# FUNCTION: db2dbmchk - Check if dbm is stopped before installation
+#
+# USAGE: db2dbmchk instance_home
+#
+# EXIT Status : 0 - Checking is OK (dbm stopped)
+#               1 - Checking does not pass (dbm not stopped)
+#               2 - Checking unknown (cannot determine)
+#
+########################################################################
+
+curdir=`/bin/pwd`
+DB2DIR=`dirname $0`
+cd ${DB2DIR?}
+DB2DIR=`/bin/pwd`
+cd ${DB2DIR?}
+DB2DIR=`dirname ${DB2DIR?}`
+cd ${curdir?}
+unset curdir
+
+PROGNAME=`basename $0`
+
+usage ()
+{
+    echo "Usage: ${PROGNAME?} <instance_name>"
+    exit 2
+}
+
+rc=0
+g_rc=0
+instHome=""
+
+case $# in
+    0)
+        usage
+    ;;
+    *)
+        instHome=$1
+    ;;
+esac
+
+gcf_cmd=${instHome?}/sqllib/bin/db2gcf
+updt_cmd=${instHome?}/sqllib/bin/db2fupdt
+rec_dir=${instHome?}/sqllib/ctrl/.dbmchk
+host=`hostname`
+
+if [ -d `dirname ${gcf_cmd?}` ]; then
+   if [ -x ${gcf_cmd?} ]; then
+      ${gcf_cmd?} -s  1> /dev/null 2> /dev/null
+      g_rc=$?
+      case ${g_rc?} in
+          1) # ok, it's stopped.
+             touch "${rec_dir?}/${host?}.success"
+          ;;
+          *)
+             rc=1
+             touch "${rec_dir?}/${host?}.failure"
+             ${updt_cmd?} -f ${rec_dir?}/${host?} -p ${host?} -v ${rc?}
+           ;;
+      esac
+   elif [ ! -f ${gcf_cmd?} ]; then
+      ${DB2DIR?}/install/db2ls -q -f BASE_DB2_ENGINE > /dev/null 2>&1
+      if [ $? -ne 0 ]; then
+         touch "${rec_dir?}/${host?}.success"
+      fi
+   fi
+fi
+    
+exit ${rc?}
